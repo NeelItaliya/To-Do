@@ -17,3 +17,13 @@ output "cloudwatch_log_group" {
   description = "CloudWatch log group for container logs"
   value       = aws_cloudwatch_log_group.app.name
 }
+
+output "users_table_name" {
+  description = "DynamoDB table for users"
+  value       = aws_dynamodb_table.users.name
+}
+
+output "todos_table_name" {
+  description = "DynamoDB table for todos"
+  value       = aws_dynamodb_table.todos.name
+}

@@ -24,6 +24,7 @@ resource "aws_ecs_task_definition" "app" {
   cpu                      = var.task_cpu
   memory                   = var.task_memory
   execution_role_arn       = aws_iam_role.ecs_task_execution.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
 
   container_definitions = jsonencode([
     {
@@ -38,8 +39,11 @@ resource "aws_ecs_task_definition" "app" {
       ]
 
       environment = [
-        { name = "NODE_ENV", value = "production" },
-        { name = "PORT", value = tostring(var.app_port) }
+        { name = "NODE_ENV",     value = "production" },
+        { name = "PORT",         value = tostring(var.app_port) },
+        { name = "AWS_REGION",   value = var.aws_region },
+        { name = "USERS_TABLE",  value = var.users_table_name },
+        { name = "TODOS_TABLE",  value = var.todos_table_name }
       ]
 
       healthCheck = {

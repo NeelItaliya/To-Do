@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>todo-pipeline · build console</title>
+  <script>if (!localStorage.getItem('token')) window.location.replace('/login.html');</script>
   <style>
     :root {
       --bg: #0a0e14;
@@ -280,6 +281,13 @@
     .health .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 0 rgba(0,0,0,0); }
     .health .dot.up { background: var(--green); box-shadow: 0 0 8px rgba(63,185,80,.8); }
     .health .dot.down { background: var(--red); box-shadow: 0 0 8px rgba(248,81,73,.8); }
+    .logout-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-family: inherit; font-size: 12px;
+      padding: .25rem .6rem; border-radius: 5px; cursor: pointer;
+    }
+    .logout-btn:hover { color: var(--red); border-color: rgba(248,81,73,.4); background: rgba(248,81,73,.08); }
+    .user-label { color: var(--purple); font-size: 12px; }
 
     /* modal */
     .overlay {
@@ -401,6 +409,8 @@
         <span class="dot" id="dot"></span>
         <span id="health">connecting…</span>
       </span>
+      <span class="user-label" id="user-label"></span>
+      <button class="logout-btn" id="logout-btn">logout</button>
     </div>
   </main>
 
@@ -458,6 +468,23 @@
   </div>
 
   <script>
+    // Redirect to login if not authenticated
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/login.html';
+
+    const username = localStorage.getItem('username') || '';
+    document.getElementById('user-label').textContent = username ? `⎇ ${username}` : '';
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      window.location.href = '/login.html';
+    });
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
+    }
+
     const API = '/api/todos';
     const list = document.getElementById('list');
     const empty = document.getElementById('empty');
@@ -679,7 +706,8 @@
     }
 
     async function load() {
-      const res = await fetch(API);
+      const res = await fetch(API, { headers: authHeaders() });
+      if (res.status === 401) { window.location.href = '/login.html'; return; }
       currentTodos = await res.json();
       render(currentTodos);
     }
@@ -795,7 +823,7 @@
     async function addTodo(title, priority, deadline) {
       await fetch(API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ title, priority, deadline: deadline || null }),
       });
       await load();
@@ -807,7 +835,7 @@
       if (!picked || picked === (t.priority || 'medium')) return;
       await fetch(`${API}/${t.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ priority: picked }),
       });
       await load();
@@ -927,7 +955,7 @@
       if (!payload) return;
       await fetch(`${API}/${t.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify(payload),
       });
       await load();
@@ -943,7 +971,7 @@
       if (!ok) return;
       await fetch(`${API}/${t.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
         body: JSON.stringify({ completed: markingDone }),
       });
       await load();
@@ -957,7 +985,7 @@
         danger: true,
       });
       if (!ok) return;
-      await fetch(`${API}/${t.id}`, { method: 'DELETE' });
+      await fetch(`${API}/${t.id}`, { method: 'DELETE', headers: authHeaders() });
       await load();
     }
 
@@ -974,7 +1002,7 @@
         pending.map((t) =>
           fetch(`${API}/${t.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify({ completed: true }),
           })
         )
