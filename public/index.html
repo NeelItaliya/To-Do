@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>todo-pipeline · build console</title>
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --term: #0d1117;
+      --chrome: #161b22;
+      --border: #21262d;
+      --text: #c9d1d9;
+      --muted: #6e7681;
+      --green: #3fb950;
+      --amber: #d29922;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Mono", "Fira Code", "JetBrains Mono", Menlo, Consolas, monospace;
+      background:
+        radial-gradient(900px 500px at 80% -10%, rgba(88,166,255,.10), transparent),
+        radial-gradient(700px 500px at -10% 110%, rgba(188,140,255,.10), transparent),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2.5rem 1rem;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .console {
+      width: 100%; max-width: 680px;
+      background: var(--term);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    }
+
+    /* window chrome */
+    .chrome {
+      display: flex; align-items: center; gap: .6rem;
+      background: var(--chrome);
+      padding: .65rem .9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .lights { display: flex; gap: .45rem; }
+    .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+    .lights .r { background: #ff5f56; }
+    .lights .y { background: #ffbd2e; }
+    .lights .g { background: #27c93f; }
+    .chrome .titlebar { color: var(--muted); font-size: 12.5px; margin-left: .4rem; }
+    .chrome .titlebar b { color: var(--text); font-weight: 600; }
+    .chrome .branch { margin-left: auto; color: var(--purple); font-size: 12px; }
+
+    .body { padding: 1rem 1.1rem 1.2rem; }
+
+    /* filter + sort dropdowns */
+    .filters {
+      display: flex; align-items: center; gap: .45rem;
+      margin-bottom: .85rem; flex-wrap: wrap;
+    }
+    .filters .flabel { color: var(--muted); font-size: 11.5px; }
+    .filters .flabel .sigil { color: var(--green); }
+    .filters select {
+      background: #010409; color: var(--text); font-family: inherit; font-size: 12.5px;
+      border: 1px solid var(--border); border-radius: 5px; padding: .25rem .5rem;
+      cursor: pointer; outline: none;
+    }
+    .filters select:hover { border-color: var(--muted); }
+    .filters select:focus { border-color: var(--green); }
+    .filters .spacer { width: .4rem; }
+    .filters .search-input {
+      flex: 1 1 140px; min-width: 120px;
+      background: #010409; color: var(--text); font-family: inherit; font-size: 12.5px;
+      border: 1px solid var(--border); border-radius: 5px; padding: .25rem .5rem;
+      outline: none;
+    }
+    .filters .search-input:focus { border-color: var(--green); }
+    .filters .search-input::placeholder { color: var(--muted); }
+
+    /* edit-task dialog */
+    .edit-input {
+      width: 100%; background: #010409; color: var(--text);
+      font-family: inherit; font-size: 13.5px;
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: .5rem .6rem; outline: none; margin-bottom: .8rem;
+    }
+    .edit-input:focus { border-color: var(--green); }
+    .edit-due-row {
+      display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; margin-bottom: .8rem;
+    }
+    .edit-due-row .optlabel {
+      color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .edit-due-row input[type="date"] {
+      background: #010409; color: var(--text); color-scheme: dark;
+      font-family: inherit; font-size: 12px;
+      border: 1px solid var(--border); border-radius: 5px; padding: .25rem .4rem; outline: none;
+    }
+    .edit-due-row input[type="date"]:focus { border-color: var(--green); }
+    .dialog .save { border-color: rgba(63,185,80,.5); color: var(--green); }
+    .dialog .save:hover { background: rgba(63,185,80,.12); }
+
+    /* banner line */
+    .banner { color: var(--muted); font-size: 12.5px; margin-bottom: .9rem; }
+    .banner .ok { color: var(--green); }
+
+    /* prompt input */
+    .prompt {
+      display: flex; flex-direction: column; gap: .55rem;
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: .6rem .75rem;
+      margin-bottom: 1rem;
+    }
+    .prompt-row { display: flex; align-items: center; gap: .5rem; }
+    .prompt-row.opts {
+      flex-wrap: wrap; gap: .4rem .55rem;
+      border-top: 1px dashed var(--border); padding-top: .55rem;
+    }
+    .prompt-row.opts .optlabel {
+      color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .prompt-row.opts .optlabel::before { content: "▸ "; color: var(--green); }
+    .prompt-row.opts .add-btn {
+      margin-left: auto; cursor: pointer;
+      font-family: inherit; font-size: 12.5px; font-weight: 700;
+      color: var(--green); background: rgba(63,185,80,.12);
+      border: 1px solid rgba(63,185,80,.45); border-radius: 6px;
+      padding: .35rem .8rem;
+    }
+    .prompt-row.opts .add-btn:hover { background: rgba(63,185,80,.22); }
+    .prompt-row.opts .add-btn:active { transform: translateY(1px); }
+    /* validation */
+    .prompt-row.opts input.invalid { border-color: var(--red) !important; }
+    .timebox.invalid { border-color: var(--red); }
+    .form-hint {
+      color: var(--red); font-size: 12px; margin: -.4rem 0 1rem;
+    }
+    .form-hint::before { content: "✘ "; }
+    .prompt .sigil { color: var(--green); white-space: nowrap; }
+    .prompt .cmd { color: var(--blue); white-space: nowrap; }
+    .prompt input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 14px;
+      caret-color: var(--green);
+    }
+    .prompt input::placeholder { color: var(--muted); }
+    .prompt .enter {
+      color: var(--muted); font-size: 11px; border: 1px solid var(--border);
+      border-radius: 5px; padding: .15rem .4rem; white-space: nowrap;
+    }
+    .prompt select {
+      background: #010409; color: var(--text); font-family: inherit; font-size: 12.5px;
+      border: 1px solid var(--border); border-radius: 5px; padding: .25rem .4rem;
+      cursor: pointer; outline: none;
+    }
+    .prompt select:focus { border-color: var(--green); }
+    .prompt input[type="date"] {
+      flex: 0 0 auto; width: auto;
+      background: #010409; color: var(--text); color-scheme: dark;
+      font-family: inherit; font-size: 12px;
+      border: 1px solid var(--border); border-radius: 5px;
+      padding: .25rem .4rem; outline: none;
+    }
+    .prompt input[type="date"]:focus { border-color: var(--green); }
+
+    /* custom 12-hour time block: hh : mm  + AM/PM */
+    .timebox {
+      flex: 0 0 auto; display: inline-flex; align-items: center; gap: .25rem;
+      background: #010409; border: 1px solid var(--border); border-radius: 6px;
+      padding: .3rem .5rem;
+    }
+    .timebox:focus-within { border-color: var(--green); }
+    .timebox input {
+      width: 2.6ch; flex: 0 0 auto;
+      background: transparent; border: none; outline: none;
+      color: var(--text); font-family: inherit; font-size: 15px; font-weight: 600;
+      text-align: center; -moz-appearance: textfield;
+    }
+    /* hide native spinner arrows — they clip the digits; wheel-scroll/typing remain */
+    .timebox input::-webkit-inner-spin-button,
+    .timebox input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .timebox input::placeholder { color: var(--muted); font-weight: 400; }
+    .timebox .sep { color: var(--muted); font-weight: 700; font-size: 15px; }
+    .timebox .ampm {
+      cursor: pointer; user-select: none; margin-left: .3rem;
+      font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+      color: var(--blue); background: rgba(88,166,255,.10);
+      border: 1px solid rgba(88,166,255,.30); border-radius: 4px;
+      padding: .15rem .4rem;
+    }
+    .timebox .ampm:hover { filter: brightness(1.25); }
+
+    /* difficulty tag */
+    .tag {
+      flex-shrink: 0; cursor: pointer; user-select: none;
+      font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      padding: .15rem .45rem; border-radius: 5px; border: 1px solid transparent;
+    }
+    .tag::before { content: "#"; opacity: .6; }
+    .tag.low    { color: var(--green); background: rgba(63,185,80,.10);  border-color: rgba(63,185,80,.30); }
+    .tag.medium { color: var(--amber); background: rgba(210,153,34,.10); border-color: rgba(210,153,34,.30); }
+    .tag.high   { color: var(--red);   background: rgba(248,81,73,.10);  border-color: rgba(248,81,73,.30); }
+    .tag:hover { filter: brightness(1.3); }
+
+    /* job rows */
+    .jobs { list-style: none; display: flex; flex-direction: column; }
+    .job {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .55rem .4rem;
+      border-bottom: 1px dashed var(--border);
+    }
+    .job:last-child { border-bottom: none; }
+    .badge {
+      display: inline-flex; align-items: center; gap: .4rem;
+      width: 104px; flex-shrink: 0; cursor: pointer;
+      font-size: 11.5px; font-weight: 700; letter-spacing: .04em;
+      padding: .2rem .45rem; border-radius: 5px;
+      border: 1px solid transparent; user-select: none;
+    }
+    .badge .glyph { font-size: 12px; }
+    .badge.queued { color: var(--amber); background: rgba(210,153,34,.10); border-color: rgba(210,153,34,.30); }
+    .badge.passed { color: var(--green); background: rgba(63,185,80,.10); border-color: rgba(63,185,80,.30); }
+    .badge.missed { color: var(--red); background: rgba(248,81,73,.12); border-color: rgba(248,81,73,.35); }
+    .badge.soon   { color: var(--amber); background: rgba(210,153,34,.20); border-color: rgba(210,153,34,.55); }
+    .badge:hover { filter: brightness(1.25); }
+    .job .title { flex: 1; word-break: break-word; }
+    .job.passed .title { color: var(--muted); text-decoration: line-through; }
+    .job .due {
+      display: inline-flex; align-items: center; gap: .25rem;
+      color: var(--muted); font-size: 11px; white-space: nowrap;
+    }
+    .job .due.overdue { color: var(--red); font-weight: 600; }
+    .job .due.soon { color: var(--amber); font-weight: 600; }
+    .job .edit {
+      background: transparent; border: none; cursor: pointer;
+      color: var(--muted); font-family: inherit; font-size: 12px;
+      padding: .1rem .4rem; border-radius: 5px;
+    }
+    .job .edit:hover { color: var(--blue); background: rgba(88,166,255,.12); }
+    .job .ts { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .job .kill {
+      background: transparent; border: none; cursor: pointer;
+      color: var(--muted); font-family: inherit; font-size: 13px;
+      padding: .1rem .4rem; border-radius: 5px;
+    }
+    .job .kill:hover { color: var(--red); background: rgba(248,81,73,.12); }
+
+    .empty { color: var(--muted); padding: 1.6rem .4rem; font-size: 13px; }
+    .empty .blink { animation: blink 1.1s steps(1) infinite; color: var(--green); }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* status bar */
+    .statusbar {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--chrome);
+      border-top: 1px solid var(--border);
+      padding: .6rem .9rem;
+      font-size: 12.5px;
+    }
+    .run-all {
+      background: transparent; border: 1px solid rgba(63,185,80,.4);
+      color: var(--green); font-family: inherit; font-size: 12.5px; font-weight: 600;
+      padding: .35rem .7rem; border-radius: 6px; cursor: pointer;
+    }
+    .run-all:hover:not(:disabled) { background: rgba(63,185,80,.12); }
+    .run-all:disabled { opacity: .35; cursor: not-allowed; border-color: var(--border); color: var(--muted); }
+    .counts { color: var(--muted); }
+    .counts b { color: var(--text); }
+    .health { margin-left: auto; display: flex; align-items: center; gap: .45rem; color: var(--muted); }
+    .health .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+    .health .dot.up { background: var(--green); box-shadow: 0 0 8px rgba(63,185,80,.8); }
+    .health .dot.down { background: var(--red); box-shadow: 0 0 8px rgba(248,81,73,.8); }
+
+    /* modal */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(1,4,9,.7);
+      display: none; align-items: center; justify-content: center; padding: 1rem;
+      backdrop-filter: blur(2px);
+    }
+    .overlay.open { display: flex; }
+    .dialog {
+      background: var(--term); border: 1px solid var(--border);
+      border-radius: 9px; width: 100%; max-width: 420px; overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0,0,0,.6);
+    }
+    .dialog .dhead {
+      background: var(--chrome); border-bottom: 1px solid var(--border);
+      padding: .55rem .85rem; color: var(--muted); font-size: 12px;
+    }
+    .dialog .dbody { padding: 1rem .9rem 1.1rem; }
+    .dialog .dbody .q { color: var(--text); margin-bottom: .4rem; }
+    .dialog .dbody .q::before { content: "▸ "; color: var(--green); }
+    .dialog .dbody .msg { color: var(--muted); font-size: 12.5px; margin-bottom: 1.1rem; word-break: break-word; }
+    .dialog .dactions { display: flex; gap: .55rem; justify-content: flex-end; }
+    .dialog button {
+      font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+      padding: .45rem .9rem; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--text);
+    }
+    .dialog .cancel:hover { background: rgba(110,118,129,.15); }
+    .dialog .confirm { border-color: rgba(63,185,80,.5); color: var(--green); }
+    .dialog .confirm:hover { background: rgba(63,185,80,.12); }
+    .dialog .confirm.danger { border-color: rgba(248,81,73,.5); color: var(--red); }
+    .dialog .confirm.danger:hover { background: rgba(248,81,73,.12); }
+
+    /* difficulty chooser */
+    .choices { display: flex; gap: .55rem; margin-bottom: 1.1rem; }
+    .choice {
+      flex: 1; font-family: inherit; cursor: pointer;
+      font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      padding: .5rem .4rem; border-radius: 6px; border: 1px solid var(--border);
+      background: transparent; color: var(--muted);
+    }
+    .choice::before { content: "#"; opacity: .6; }
+    .choice.low:hover,    .choice.low.sel    { color: var(--green); border-color: rgba(63,185,80,.5);  background: rgba(63,185,80,.10); }
+    .choice.medium:hover, .choice.medium.sel { color: var(--amber); border-color: rgba(210,153,34,.5); background: rgba(210,153,34,.10); }
+    .choice.high:hover,   .choice.high.sel   { color: var(--red);   border-color: rgba(248,81,73,.5);  background: rgba(248,81,73,.10); }
+    .choice.current { cursor: default; }
+    .choice.current::after { content: " ✓"; }
+  </style>
+</head>
+<body>
+  <main class="console">
+    <div class="chrome">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="titlebar"><b>todo-pipeline</b> ▸ build console</span>
+      <span class="branch" id="branch">⎇ main</span>
+    </div>
+
+    <div class="body">
+      <div class="banner">
+        <span class="ok">✓</span> pipeline ready &mdash; queue a job to start the build.
+      </div>
+
+      <form class="prompt" id="add-form">
+        <div class="prompt-row">
+          <span class="sigil">$</span>
+          <span class="cmd">./todo add</span>
+          <input id="title" type="text" placeholder='"deploy to staging"' autocomplete="off" required />
+          <span class="enter">↵ enter</span>
+        </div>
+        <div class="prompt-row opts">
+          <label class="optlabel" for="priority">priority</label>
+          <select id="priority" title="Priority">
+            <option value="low">low</option>
+            <option value="medium" selected>medium</option>
+            <option value="high">high</option>
+          </select>
+          <label class="optlabel" for="deadline-date">due</label>
+          <input id="deadline-date" type="date" title="Deadline date (required)" />
+          <span class="timebox" id="timebox" title="Deadline time — scroll or type (required)">
+            <input id="deadline-hour" type="number" min="1" max="12" step="1" placeholder="hh" inputmode="numeric" />
+            <span class="sep">:</span>
+            <input id="deadline-min" type="number" min="0" max="59" step="1" placeholder="mm" inputmode="numeric" />
+            <button type="button" id="deadline-ampm" class="ampm">PM</button>
+          </span>
+          <button type="submit" class="add-btn">+ add task</button>
+        </div>
+      </form>
+      <div class="form-hint" id="form-hint" hidden></div>
+
+      <div class="filters" id="filters">
+        <label class="flabel" for="filter-status"><span class="sigil">⩒</span> show</label>
+        <select id="filter-status" title="Filter by status">
+          <option value="all">all jobs</option>
+          <option value="queued">queued only</option>
+          <option value="passed">passed only</option>
+          <option value="soon">due soon</option>
+          <option value="missed">missed only</option>
+        </select>
+        <span class="spacer"></span>
+        <label class="flabel" for="sort-by"><span class="sigil">↕</span> sort</label>
+        <select id="sort-by" title="Sort tasks">
+          <option value="newest">newest first</option>
+          <option value="oldest">oldest first</option>
+          <option value="deadline">deadline (soonest)</option>
+          <option value="priority">priority</option>
+          <option value="title">title a–z</option>
+        </select>
+        <input id="search" class="search-input" type="search" placeholder="search title…" autocomplete="off" />
+      </div>
+
+      <ul class="jobs" id="list"></ul>
+      <div class="empty" id="empty" hidden>// no jobs queued<span class="blink">_</span></div>
+    </div>
+
+    <div class="statusbar">
+      <button class="run-all" id="mark-all">▸ run all</button>
+      <span class="counts" id="counts"><b>0</b> queued · <b>0</b> passed</span>
+      <span class="health">
+        <span class="dot" id="dot"></span>
+        <span id="health">connecting…</span>
+      </span>
+    </div>
+  </main>
+
+  <div class="overlay" id="diff-overlay">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="diff-title">
+      <div class="dhead">todo-pipeline ▸ set priority</div>
+      <div class="dbody">
+        <div class="q" id="diff-title">Set priority</div>
+        <div class="msg" id="diff-msg"></div>
+        <div class="choices" id="diff-choices"></div>
+        <div class="dactions">
+          <button class="cancel" id="diff-cancel">cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="dhead" id="modal-head">todo-pipeline ▸ confirm</div>
+      <div class="dbody">
+        <div class="q" id="modal-title">Confirm</div>
+        <div class="msg" id="modal-message"></div>
+        <div class="dactions">
+          <button class="cancel" id="modal-cancel">cancel</button>
+          <button class="confirm" id="modal-confirm">confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="edit-overlay">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="edit-q">
+      <div class="dhead">todo-pipeline ▸ edit task</div>
+      <div class="dbody">
+        <div class="q" id="edit-q">Edit task</div>
+        <input id="edit-title" class="edit-input" type="text" placeholder="task title" />
+        <div class="edit-due-row">
+          <span class="optlabel">due</span>
+          <input id="edit-date" type="date" title="Deadline date" />
+          <span class="timebox" id="edit-timebox" title="Deadline time — scroll or type">
+            <input id="edit-hour" type="number" min="1" max="12" step="1" placeholder="hh" inputmode="numeric" />
+            <span class="sep">:</span>
+            <input id="edit-min" type="number" min="0" max="59" step="1" placeholder="mm" inputmode="numeric" />
+            <button type="button" id="edit-ampm" class="ampm">PM</button>
+          </span>
+        </div>
+        <div class="form-hint" id="edit-hint" hidden></div>
+        <div class="dactions">
+          <button class="cancel" id="edit-cancel">cancel</button>
+          <button class="confirm save" id="edit-save">save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/todos';
+    const list = document.getElementById('list');
+    const empty = document.getElementById('empty');
+    const form = document.getElementById('add-form');
+    const input = document.getElementById('title');
+    const prioritySelect = document.getElementById('priority');
+    const deadlineDateInput = document.getElementById('deadline-date');
+    const hourInput = document.getElementById('deadline-hour');
+    const minInput = document.getElementById('deadline-min');
+    const ampmBtn = document.getElementById('deadline-ampm');
+    const timebox = document.getElementById('timebox');
+    const formHint = document.getElementById('form-hint');
+    const PRIORITIES = ['low', 'medium', 'high'];
+
+    // Clear validation styling as soon as the user starts fixing the deadline.
+    function clearDeadlineError() {
+      deadlineDateInput.classList.remove('invalid');
+      timebox.classList.remove('invalid');
+      formHint.hidden = true;
+    }
+    deadlineDateInput.addEventListener('input', clearDeadlineError);
+    hourInput.addEventListener('input', clearDeadlineError);
+    minInput.addEventListener('input', clearDeadlineError);
+
+    // Don't allow past dates in the picker (local "YYYY-MM-DD").
+    (function setMinDate() {
+      const now = new Date();
+      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString().slice(0, 10);
+      deadlineDateInput.min = local;
+    })();
+
+    // --- 12-hour time block: scroll to step, type freely, wrap at bounds ---
+    ampmBtn.addEventListener('click', () => {
+      ampmBtn.textContent = ampmBtn.textContent === 'AM' ? 'PM' : 'AM';
+    });
+
+    function clampWrap(value, min, max) {
+      if (value < min) return max;
+      if (value > max) return min;
+      return value;
+    }
+
+    function wheelStep(inputEl, min, max) {
+      inputEl.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const cur = parseInt(inputEl.value, 10);
+        const base = Number.isNaN(cur) ? (e.deltaY < 0 ? min - 1 : max + 1) : cur;
+        inputEl.value = clampWrap(base + (e.deltaY < 0 ? 1 : -1), min, max);
+      }, { passive: false });
+    }
+    wheelStep(hourInput, 1, 12);
+    wheelStep(minInput, 0, 59);
+
+    // Cap values live while typing: strip non-digits, max 2 digits, clamp to max.
+    function limitInput(inputEl, max) {
+      inputEl.addEventListener('input', () => {
+        let v = inputEl.value.replace(/[^0-9]/g, '').slice(0, 2);
+        if (v !== '' && parseInt(v, 10) > max) v = String(max);
+        inputEl.value = v;
+      });
+    }
+    limitInput(hourInput, 12);
+    limitInput(minInput, 59);
+
+    // Normalize typed values on blur (clamp into range, pad minutes).
+    hourInput.addEventListener('blur', () => {
+      if (hourInput.value === '') return;
+      let h = parseInt(hourInput.value, 10);
+      if (Number.isNaN(h)) { hourInput.value = ''; return; }
+      hourInput.value = Math.min(12, Math.max(1, h));
+    });
+    minInput.addEventListener('blur', () => {
+      if (minInput.value === '') return;
+      let m = parseInt(minInput.value, 10);
+      if (Number.isNaN(m)) { minInput.value = ''; return; }
+      minInput.value = String(Math.min(59, Math.max(0, m))).padStart(2, '0');
+    });
+
+    function isOverdue(t) {
+      return !t.completed && t.deadline && new Date(t.deadline).getTime() < Date.now();
+    }
+
+    function fmtDeadline(iso) {
+      try {
+        return new Date(iso).toLocaleString([], {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+        });
+      } catch { return ''; }
+    }
+
+    const SOON_MS = 60 * 60 * 1000; // "due soon" = within the next 60 minutes
+
+    function isDueSoon(t) {
+      if (t.completed || !t.deadline) return false;
+      const diff = new Date(t.deadline).getTime() - Date.now();
+      return diff >= 0 && diff <= SOON_MS;
+    }
+
+    // Compact relative label, e.g. "in 3h", "in 2d", "5m ago".
+    function fmtRelative(iso) {
+      const diff = new Date(iso).getTime() - Date.now();
+      const past = diff < 0;
+      const mins = Math.round(Math.abs(diff) / 60000);
+      const hrs = Math.round(mins / 60);
+      const days = Math.round(hrs / 24);
+      let label;
+      if (mins < 1) return past ? 'just now' : 'now';
+      else if (mins < 60) label = `${mins}m`;
+      else if (hrs < 24) label = `${hrs}h`;
+      else label = `${days}d`;
+      return past ? `${label} ago` : `in ${label}`;
+    }
+
+    // Assemble a date + 12-hour time into an ISO string (no future check here).
+    // Returns { iso } or { error, field }.
+    function assembleISO(dateVal, hourRaw, minRaw, isPM) {
+      if (!dateVal) return { error: 'pick a deadline date', field: 'date' };
+      const h = parseInt(hourRaw, 10);
+      const m = parseInt(minRaw, 10);
+      if (Number.isNaN(h) || Number.isNaN(m)) return { error: 'set a deadline time (hh:mm)', field: 'time' };
+      const hour24 = (Math.min(12, Math.max(1, h)) % 12) + (isPM ? 12 : 0);
+      const hh = String(hour24).padStart(2, '0');
+      const mm = String(Math.min(59, Math.max(0, m))).padStart(2, '0');
+      return { iso: new Date(`${dateVal}T${hh}:${mm}`).toISOString() };
+    }
+    const markAllBtn = document.getElementById('mark-all');
+    const counts = document.getElementById('counts');
+    const filterStatus = document.getElementById('filter-status');
+    const sortBy = document.getElementById('sort-by');
+    let currentTodos = [];
+    let currentFilter = 'all';
+    let currentSort = 'newest';
+    let searchQuery = '';
+
+    const overlay = document.getElementById('overlay');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMessage = document.getElementById('modal-message');
+    const modalConfirm = document.getElementById('modal-confirm');
+    const modalCancel = document.getElementById('modal-cancel');
+
+    function confirmDialog({ title, message, confirmLabel = 'confirm', danger = false }) {
+      return new Promise((resolve) => {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+        modalConfirm.textContent = confirmLabel;
+        modalConfirm.classList.toggle('danger', danger);
+        overlay.classList.add('open');
+
+        const cleanup = (result) => {
+          overlay.classList.remove('open');
+          modalConfirm.onclick = null;
+          modalCancel.onclick = null;
+          overlay.onclick = null;
+          document.onkeydown = null;
+          resolve(result);
+        };
+        modalConfirm.onclick = () => cleanup(true);
+        modalCancel.onclick = () => cleanup(false);
+        overlay.onclick = (e) => { if (e.target === overlay) cleanup(false); };
+        document.onkeydown = (e) => { if (e.key === 'Escape') cleanup(false); };
+      });
+    }
+
+    // Difficulty chooser modal -> resolves the picked value, or null on cancel
+    const diffOverlay = document.getElementById('diff-overlay');
+    const diffMsg = document.getElementById('diff-msg');
+    const diffChoices = document.getElementById('diff-choices');
+    const diffCancel = document.getElementById('diff-cancel');
+
+    function choosePriority(t) {
+      return new Promise((resolve) => {
+        const current = t.priority || 'medium';
+        diffMsg.textContent = `"${t.title}" — currently ${current}. Pick a new priority:`;
+        diffChoices.innerHTML = '';
+
+        const cleanup = (value) => {
+          diffOverlay.classList.remove('open');
+          diffCancel.onclick = null;
+          diffOverlay.onclick = null;
+          document.onkeydown = null;
+          resolve(value);
+        };
+
+        for (const d of PRIORITIES) {
+          const btn = document.createElement('button');
+          const isCurrent = d === current;
+          btn.className = 'choice ' + d + (isCurrent ? ' sel current' : '');
+          btn.textContent = d;
+          btn.disabled = isCurrent;
+          btn.onclick = () => cleanup(d);
+          diffChoices.appendChild(btn);
+        }
+
+        diffOverlay.classList.add('open');
+        diffCancel.onclick = () => cleanup(null);
+        diffOverlay.onclick = (e) => { if (e.target === diffOverlay) cleanup(null); };
+        document.onkeydown = (e) => { if (e.key === 'Escape') cleanup(null); };
+      });
+    }
+
+    function fmtTime(iso) {
+      try { return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
+      catch { return ''; }
+    }
+
+    async function checkHealth() {
+      const dot = document.getElementById('dot');
+      const label = document.getElementById('health');
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        dot.className = 'dot up';
+        label.textContent = `api healthy · ${Math.floor(data.uptime)}s up`;
+      } catch {
+        dot.className = 'dot down';
+        label.textContent = 'api unreachable';
+      }
+    }
+
+    async function load() {
+      const res = await fetch(API);
+      currentTodos = await res.json();
+      render(currentTodos);
+    }
+
+    function render(todos) {
+      list.innerHTML = '';
+
+      const passed = todos.filter((t) => t.completed).length;
+      const queued = todos.length - passed;
+      const soonCount = todos.filter(isDueSoon).length;
+      const missed = todos.filter(isOverdue).length;
+      counts.innerHTML =
+        `<b>${queued}</b> queued · <b>${passed}</b> passed` +
+        (soonCount > 0 ? ` · <b style="color:var(--amber)">${soonCount}</b> soon` : '') +
+        (missed > 0 ? ` · <b style="color:var(--red)">${missed}</b> missed` : '');
+      markAllBtn.disabled = queued === 0;
+
+      const visible = todos
+        .filter((t) => {
+          if (currentFilter === 'queued') return !t.completed;
+          if (currentFilter === 'passed') return t.completed;
+          if (currentFilter === 'missed') return isOverdue(t);
+          if (currentFilter === 'soon') return isDueSoon(t);
+          return true;
+        })
+        .filter((t) => !searchQuery || t.title.toLowerCase().includes(searchQuery))
+        .sort((a, b) => {
+          if (currentSort === 'oldest') return a.id - b.id;
+          if (currentSort === 'title') return a.title.localeCompare(b.title);
+          if (currentSort === 'priority') {
+            const rank = { high: 0, medium: 1, low: 2 };
+            return rank[a.priority || 'medium'] - rank[b.priority || 'medium'];
+          }
+          if (currentSort === 'deadline') {
+            if (!a.deadline && !b.deadline) return b.id - a.id;
+            if (!a.deadline) return 1;
+            if (!b.deadline) return -1;
+            return new Date(a.deadline) - new Date(b.deadline);
+          }
+          return b.id - a.id; // newest first
+        });
+
+      if (visible.length === 0) {
+        empty.hidden = false;
+        empty.firstChild.textContent = searchQuery
+          ? `// no matches for "${searchQuery}"`
+          : todos.length === 0 ? '// no jobs queued' : `// no ${currentFilter} jobs`;
+      } else {
+        empty.hidden = true;
+      }
+
+      for (const t of visible) {
+        const overdue = isOverdue(t);
+        const soon = !overdue && isDueSoon(t);
+        const li = document.createElement('li');
+        li.className = 'job' + (t.completed ? ' passed' : '') + (overdue ? ' missed' : '');
+
+        const badge = document.createElement('span');
+        const state = t.completed ? 'passed' : overdue ? 'missed' : soon ? 'soon' : 'queued';
+        badge.className = 'badge ' + state;
+        badge.innerHTML = t.completed
+          ? '<span class="glyph">✔</span> PASSED'
+          : overdue
+            ? '<span class="glyph">✘</span> MISSED'
+            : soon
+              ? '<span class="glyph">⏳</span> DUE SOON'
+              : '<span class="glyph">●</span> QUEUED';
+        badge.title = 'Toggle status';
+        badge.onclick = () => toggle(t);
+
+        const tag = document.createElement('span');
+        const priority = t.priority || 'medium';
+        tag.className = 'tag ' + priority;
+        tag.textContent = priority;
+        tag.title = 'Click to change priority';
+        tag.onclick = () => changePriority(t);
+
+        const title = document.createElement('span');
+        title.className = 'title';
+        title.textContent = t.title;
+
+        const ts = document.createElement('span');
+        ts.className = 'ts';
+        ts.textContent = fmtTime(t.createdAt);
+
+        const edit = document.createElement('button');
+        edit.className = 'edit';
+        edit.textContent = '✎';
+        edit.title = 'Edit task';
+        edit.onclick = () => editTask(t);
+
+        const kill = document.createElement('button');
+        kill.className = 'kill';
+        kill.textContent = '✕';
+        kill.title = 'Delete job';
+        kill.onclick = () => remove(t);
+
+        const children = [badge, tag, title];
+        if (t.deadline) {
+          const due = document.createElement('span');
+          due.className = 'due' + (overdue ? ' overdue' : soon ? ' soon' : '');
+          due.innerHTML = `<span class="glyph">⏰</span>${fmtRelative(t.deadline)}`;
+          due.title = (overdue ? 'Missed: ' : 'Due: ') + fmtDeadline(t.deadline);
+          children.push(due);
+        }
+        children.push(ts, edit, kill);
+
+        li.append(...children);
+        list.appendChild(li);
+      }
+    }
+
+    async function addTodo(title, priority, deadline) {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, priority, deadline: deadline || null }),
+      });
+      await load();
+    }
+
+    // Let the user pick which priority to set.
+    async function changePriority(t) {
+      const picked = await choosePriority(t);
+      if (!picked || picked === (t.priority || 'medium')) return;
+      await fetch(`${API}/${t.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priority: picked }),
+      });
+      await load();
+    }
+
+    // --- Edit task (title + deadline) modal ---
+    const editOverlay = document.getElementById('edit-overlay');
+    const editTitleInput = document.getElementById('edit-title');
+    const editDate = document.getElementById('edit-date');
+    const editHour = document.getElementById('edit-hour');
+    const editMin = document.getElementById('edit-min');
+    const editAmpm = document.getElementById('edit-ampm');
+    const editTimebox = document.getElementById('edit-timebox');
+    const editHint = document.getElementById('edit-hint');
+    const editCancel = document.getElementById('edit-cancel');
+    const editSave = document.getElementById('edit-save');
+
+    // Same scroll/type/clamp behavior as the add form's time block.
+    editAmpm.addEventListener('click', () => {
+      editAmpm.textContent = editAmpm.textContent === 'AM' ? 'PM' : 'AM';
+    });
+    wheelStep(editHour, 1, 12);
+    wheelStep(editMin, 0, 59);
+    limitInput(editHour, 12);
+    limitInput(editMin, 59);
+    editHour.addEventListener('blur', () => {
+      if (editHour.value === '') return;
+      const h = parseInt(editHour.value, 10);
+      editHour.value = Number.isNaN(h) ? '' : Math.min(12, Math.max(1, h));
+    });
+    editMin.addEventListener('blur', () => {
+      if (editMin.value === '') return;
+      const m = parseInt(editMin.value, 10);
+      editMin.value = Number.isNaN(m) ? '' : String(Math.min(59, Math.max(0, m))).padStart(2, '0');
+    });
+
+    // Break an ISO deadline into the picker's date / 12-hour fields.
+    function decomposeDeadline(iso) {
+      const d = new Date(iso);
+      const pad = (n) => String(n).padStart(2, '0');
+      const h = d.getHours();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      let h12 = h % 12; if (h12 === 0) h12 = 12;
+      return {
+        dateStr: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+        hour: h12, min: d.getMinutes(), ampm,
+      };
+    }
+
+    // Open the dialog; resolves to a PUT payload or null on cancel.
+    // The deadline is only included when the user actually changed it, so a
+    // title-only edit of an already-overdue task won't trip the future check.
+    function openEditModal(t) {
+      return new Promise((resolve) => {
+        const originalISO = t.deadline;
+        editTitleInput.value = t.title;
+        editHint.hidden = true;
+        editTimebox.classList.remove('invalid');
+        editDate.classList.remove('invalid');
+        if (t.deadline) {
+          const p = decomposeDeadline(t.deadline);
+          editDate.value = p.dateStr;
+          editHour.value = p.hour;
+          editMin.value = String(p.min).padStart(2, '0');
+          editAmpm.textContent = p.ampm;
+        } else {
+          editDate.value = ''; editHour.value = ''; editMin.value = ''; editAmpm.textContent = 'PM';
+        }
+        editOverlay.classList.add('open');
+        editTitleInput.focus();
+
+        const cleanup = (result) => {
+          editOverlay.classList.remove('open');
+          editSave.onclick = null;
+          editCancel.onclick = null;
+          editOverlay.onclick = null;
+          document.onkeydown = null;
+          resolve(result);
+        };
+
+        editSave.onclick = () => {
+          const title = editTitleInput.value.trim();
+          if (!title) {
+            editHint.textContent = 'title cannot be empty';
+            editHint.hidden = false;
+            return;
+          }
+          const built = assembleISO(editDate.value, editHour.value, editMin.value, editAmpm.textContent === 'PM');
+          if (built.error) {
+            editDate.classList.toggle('invalid', built.field === 'date');
+            editTimebox.classList.toggle('invalid', built.field === 'time');
+            editHint.textContent = built.error;
+            editHint.hidden = false;
+            return;
+          }
+          const payload = { title };
+          if (built.iso !== originalISO) {
+            if (new Date(built.iso).getTime() <= Date.now()) {
+              editDate.classList.add('invalid');
+              editTimebox.classList.add('invalid');
+              editHint.textContent = 'deadline must be in the future';
+              editHint.hidden = false;
+              return;
+            }
+            payload.deadline = built.iso;
+          }
+          cleanup(payload);
+        };
+        editCancel.onclick = () => cleanup(null);
+        editOverlay.onclick = (e) => { if (e.target === editOverlay) cleanup(null); };
+        document.onkeydown = (e) => { if (e.key === 'Escape') cleanup(null); };
+      });
+    }
+
+    async function editTask(t) {
+      const payload = await openEditModal(t);
+      if (!payload) return;
+      await fetch(`${API}/${t.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      await load();
+    }
+
+    async function toggle(t) {
+      const markingDone = !t.completed;
+      const ok = await confirmDialog({
+        title: markingDone ? 'Mark job as PASSED?' : 'Re-queue this job?',
+        message: `"${t.title}" will be set to ${markingDone ? 'PASSED' : 'QUEUED'}.`,
+        confirmLabel: markingDone ? 'mark passed' : 're-queue',
+      });
+      if (!ok) return;
+      await fetch(`${API}/${t.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completed: markingDone }),
+      });
+      await load();
+    }
+
+    async function remove(t) {
+      const ok = await confirmDialog({
+        title: 'Delete this job?',
+        message: `"${t.title}" will be permanently removed from the pipeline. This cannot be undone.`,
+        confirmLabel: 'delete',
+        danger: true,
+      });
+      if (!ok) return;
+      await fetch(`${API}/${t.id}`, { method: 'DELETE' });
+      await load();
+    }
+
+    async function markAll() {
+      const pending = currentTodos.filter((t) => !t.completed);
+      if (pending.length === 0) return;
+      const ok = await confirmDialog({
+        title: 'Run all queued jobs?',
+        message: `${pending.length} queued job${pending.length > 1 ? 's' : ''} will be marked PASSED.`,
+        confirmLabel: 'run all',
+      });
+      if (!ok) return;
+      await Promise.all(
+        pending.map((t) =>
+          fetch(`${API}/${t.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ completed: true }),
+          })
+        )
+      );
+      await load();
+    }
+
+    markAllBtn.addEventListener('click', markAll);
+
+    filterStatus.addEventListener('change', () => {
+      currentFilter = filterStatus.value;
+      render(currentTodos);
+    });
+
+    sortBy.addEventListener('change', () => {
+      currentSort = sortBy.value;
+      render(currentTodos);
+    });
+
+    const searchInput = document.getElementById('search');
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value.trim().toLowerCase();
+      render(currentTodos);
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = input.value.trim();
+      if (!title) return;
+      // Deadline is required: date + hour + minute must all be set.
+      const dateVal = deadlineDateInput.value;
+      let h = parseInt(hourInput.value, 10);
+      let m = parseInt(minInput.value, 10);
+      const noDate = !dateVal;
+      const noTime = Number.isNaN(h) || Number.isNaN(m);
+      deadlineDateInput.classList.toggle('invalid', noDate);
+      timebox.classList.toggle('invalid', noTime);
+      if (noDate || noTime) {
+        formHint.textContent = noDate && noTime
+          ? 'a deadline date and time are required'
+          : noDate ? 'pick a deadline date' : 'set a deadline time (hh:mm)';
+        formHint.hidden = false;
+        return;
+      }
+      h = Math.min(12, Math.max(1, h));
+      m = Math.min(59, Math.max(0, m));
+      const pm = ampmBtn.textContent === 'PM';
+      // 12-hour -> 24-hour: 12 AM = 0, 12 PM = 12.
+      let hour24 = h % 12;
+      if (pm) hour24 += 12;
+      const hh = String(hour24).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      const deadlineDate = new Date(`${dateVal}T${hh}:${mm}`);
+      // Deadline must be in the future.
+      if (deadlineDate.getTime() <= Date.now()) {
+        deadlineDateInput.classList.add('invalid');
+        timebox.classList.add('invalid');
+        formHint.textContent = 'deadline must be in the future';
+        formHint.hidden = false;
+        return;
+      }
+      const deadline = deadlineDate.toISOString();
+      input.value = '';
+      deadlineDateInput.value = '';
+      hourInput.value = '';
+      minInput.value = '';
+      ampmBtn.textContent = 'PM';
+      clearDeadlineError();
+      await addTodo(title, prioritySelect.value, deadline);
+      input.focus();
+    });
+
+    checkHealth();
+    load();
+    setInterval(checkHealth, 15000);
+    setInterval(() => render(currentTodos), 30000);
+  </script>
+</body>
+</html>
