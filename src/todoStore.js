@@ -1,3 +1,4 @@
+const { randomUUID } = require('crypto');
 const { GetCommand, PutCommand, DeleteCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
 const PRIORITIES = ['low', 'medium', 'high'];
@@ -67,7 +68,7 @@ class TodoStore {
     const validDeadline = validateDeadline(deadline, { required: true });
     const item = {
       userId,
-      todoId: crypto.randomUUID(),
+      todoId: randomUUID(),
       title: title.trim(),
       completed: Boolean(completed),
       priority: validPriority,
