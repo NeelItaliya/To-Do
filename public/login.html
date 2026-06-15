@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>todo-pipeline · login</title>
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --term: #0d1117;
+      --chrome: #161b22;
+      --border: #21262d;
+      --text: #c9d1d9;
+      --muted: #6e7681;
+      --green: #3fb950;
+      --amber: #d29922;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "SF Mono", "Fira Code", "JetBrains Mono", Menlo, Consolas, monospace;
+      background:
+        radial-gradient(900px 500px at 80% -10%, rgba(88,166,255,.10), transparent),
+        radial-gradient(700px 500px at -10% 110%, rgba(188,140,255,.10), transparent),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem 1rem;
+      font-size: 14px;
+    }
+    .console {
+      width: 100%; max-width: 420px;
+      background: var(--term);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,.55);
+    }
+    .chrome {
+      display: flex; align-items: center; gap: .6rem;
+      background: var(--chrome);
+      padding: .65rem .9rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .lights { display: flex; gap: .45rem; }
+    .lights i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+    .lights .r { background: #ff5f56; }
+    .lights .y { background: #ffbd2e; }
+    .lights .g { background: #27c93f; }
+    .chrome .titlebar { color: var(--muted); font-size: 12.5px; margin-left: .4rem; }
+    .chrome .titlebar b { color: var(--text); font-weight: 600; }
+    .body { padding: 1.4rem 1.2rem 1.6rem; }
+    .tabs {
+      display: flex; gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 6px; overflow: hidden;
+      margin-bottom: 1.4rem;
+    }
+    .tab {
+      flex: 1; padding: .45rem;
+      background: transparent; border: none;
+      color: var(--muted); font-family: inherit; font-size: 12.5px;
+      font-weight: 600; cursor: pointer; letter-spacing: .04em;
+    }
+    .tab.active { background: var(--chrome); color: var(--green); }
+    .tab:first-child { border-right: 1px solid var(--border); }
+    .field { margin-bottom: .9rem; }
+    .field label {
+      display: block; color: var(--muted); font-size: 11px;
+      text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: .35rem;
+    }
+    .field label::before { content: "▸ "; color: var(--green); }
+    .field input {
+      width: 100%;
+      background: #010409; color: var(--text);
+      font-family: inherit; font-size: 13.5px;
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: .55rem .7rem; outline: none;
+    }
+    .field input:focus { border-color: var(--green); }
+    .field input.invalid { border-color: var(--red); }
+    .error-msg {
+      color: var(--red); font-size: 12px;
+      margin-bottom: .9rem; min-height: 1.2em;
+    }
+    .error-msg::before { content: "✘ "; }
+    .error-msg:empty::before { content: ""; }
+    .submit-btn {
+      width: 100%;
+      background: rgba(63,185,80,.12);
+      border: 1px solid rgba(63,185,80,.45);
+      color: var(--green); font-family: inherit;
+      font-size: 13px; font-weight: 700;
+      padding: .6rem; border-radius: 6px;
+      cursor: pointer; letter-spacing: .04em;
+    }
+    .submit-btn:hover { background: rgba(63,185,80,.22); }
+    .submit-btn:active { transform: translateY(1px); }
+    .submit-btn:disabled { opacity: .4; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <main class="console">
+    <div class="chrome">
+      <span class="lights"><i class="r"></i><i class="y"></i><i class="g"></i></span>
+      <span class="titlebar"><b>todo-pipeline</b> ▸ auth</span>
+    </div>
+    <div class="body">
+      <div class="tabs">
+        <button class="tab active" id="tab-login">login</button>
+        <button class="tab" id="tab-register">register</button>
+      </div>
+      <div class="field">
+        <label for="username">username</label>
+        <input id="username" type="text" autocomplete="username" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label for="password">password</label>
+        <input id="password" type="password" autocomplete="current-password" />
+      </div>
+      <div class="error-msg" id="error"></div>
+      <button class="submit-btn" id="submit">▸ login</button>
+    </div>
+  </main>
+
+  <script>
+    let mode = 'login';
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const errorEl = document.getElementById('error');
+    const submitBtn = document.getElementById('submit');
+    const tabLogin = document.getElementById('tab-login');
+    const tabRegister = document.getElementById('tab-register');
+
+    if (localStorage.getItem('token')) {
+      window.location.href = '/';
+    }
+
+    function setMode(m) {
+      mode = m;
+      tabLogin.classList.toggle('active', m === 'login');
+      tabRegister.classList.toggle('active', m === 'register');
+      submitBtn.textContent = m === 'login' ? '▸ login' : '▸ create account';
+      errorEl.textContent = '';
+      usernameInput.classList.remove('invalid');
+      passwordInput.classList.remove('invalid');
+    }
+
+    tabLogin.addEventListener('click', () => setMode('login'));
+    tabRegister.addEventListener('click', () => setMode('register'));
+
+    submitBtn.addEventListener('click', async () => {
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      errorEl.textContent = '';
+      usernameInput.classList.remove('invalid');
+      passwordInput.classList.remove('invalid');
+
+      if (!username) { usernameInput.classList.add('invalid'); errorEl.textContent = 'username is required'; return; }
+      if (!password) { passwordInput.classList.add('invalid'); errorEl.textContent = 'password is required'; return; }
+
+      submitBtn.disabled = true;
+      try {
+        const res = await fetch(`/api/auth/${mode}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          errorEl.textContent = data.error || 'something went wrong';
+          return;
+        }
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('username', data.username);
+        window.location.href = '/';
+      } catch {
+        errorEl.textContent = 'network error — is the server running?';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    [usernameInput, passwordInput].forEach(el => {
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitBtn.click(); });
+    });
+
+    usernameInput.focus();
+  </script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-// In-memory To-Do store. Pure logic, no HTTP — easy to unit test.
+const { randomUUID } = require('crypto');
+const { GetCommand, PutCommand, DeleteCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
 const PRIORITIES = ['low', 'medium', 'high'];
 
@@ -35,20 +36,29 @@ function validateDeadline(value, { required = false } = {}) {
 }
 
 class TodoStore {
-  constructor() {
-    this.todos = new Map();
-    this.nextId = 1;
+  constructor({ tableName, docClient }) {
+    this.tableName = tableName;
+    this.docClient = docClient;
   }
 
-  list() {
-    return Array.from(this.todos.values());
+  async list(userId) {
+    const res = await this.docClient.send(new QueryCommand({
+      TableName: this.tableName,
+      KeyConditionExpression: 'userId = :uid',
+      ExpressionAttributeValues: { ':uid': userId },
+    }));
+    return (res.Items || []).map(this._format);
   }
 
-  get(id) {
-    return this.todos.get(Number(id)) || null;
+  async get(userId, todoId) {
+    const res = await this.docClient.send(new GetCommand({
+      TableName: this.tableName,
+      Key: { userId, todoId },
+    }));
+    return res.Item ? this._format(res.Item) : null;
   }
 
-  create({ title, completed = false, priority = 'medium', deadline = null }) {
+  async create(userId, { title, completed = false, priority = 'medium', deadline = null }) {
     if (!title || typeof title !== 'string' || !title.trim()) {
       const err = new Error('title is required and must be a non-empty string');
       err.statusCode = 400;
@@ -56,20 +66,21 @@ class TodoStore {
     }
     const validPriority = validatePriority(priority);
     const validDeadline = validateDeadline(deadline, { required: true });
-    const todo = {
-      id: this.nextId++,
+    const item = {
+      userId,
+      todoId: randomUUID(),
       title: title.trim(),
       completed: Boolean(completed),
       priority: validPriority,
       deadline: validDeadline,
       createdAt: new Date().toISOString(),
     };
-    this.todos.set(todo.id, todo);
-    return todo;
+    await this.docClient.send(new PutCommand({ TableName: this.tableName, Item: item }));
+    return this._format(item);
   }
 
-  update(id, { title, completed, priority, deadline }) {
-    const todo = this.get(id);
+  async update(userId, todoId, { title, completed, priority, deadline }) {
+    const todo = await this.get(userId, todoId);
     if (!todo) return null;
     if (title !== undefined) {
       if (typeof title !== 'string' || !title.trim()) {
@@ -79,26 +90,33 @@ class TodoStore {
       }
       todo.title = title.trim();
     }
-    if (completed !== undefined) {
-      todo.completed = Boolean(completed);
-    }
-    if (priority !== undefined) {
-      todo.priority = validatePriority(priority);
-    }
-    if (deadline !== undefined) {
-      todo.deadline = validateDeadline(deadline, { required: true });
-    }
-    this.todos.set(todo.id, todo);
-    return todo;
+    if (completed !== undefined) todo.completed = Boolean(completed);
+    if (priority !== undefined) todo.priority = validatePriority(priority);
+    if (deadline !== undefined) todo.deadline = validateDeadline(deadline, { required: true });
+    const item = { userId, todoId, ...todo };
+    await this.docClient.send(new PutCommand({ TableName: this.tableName, Item: item }));
+    return this._format(item);
   }
 
-  remove(id) {
-    return this.todos.delete(Number(id));
+  async remove(userId, todoId) {
+    const existing = await this.get(userId, todoId);
+    if (!existing) return false;
+    await this.docClient.send(new DeleteCommand({
+      TableName: this.tableName,
+      Key: { userId, todoId },
+    }));
+    return true;
   }
 
-  clear() {
-    this.todos.clear();
-    this.nextId = 1;
+  _format(item) {
+    return {
+      id: item.todoId,
+      title: item.title,
+      completed: item.completed,
+      priority: item.priority,
+      deadline: item.deadline,
+      createdAt: item.createdAt,
+    };
   }
 }
 

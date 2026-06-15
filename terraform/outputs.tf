@@ -1,0 +1,29 @@
+output "app_url" {
+  description = "URL to access the To-Do application"
+  value       = "http://${aws_lb.main.dns_name}"
+}
+
+output "alb_dns_name" {
+  description = "Raw DNS name of the Application Load Balancer"
+  value       = aws_lb.main.dns_name
+}
+
+output "ecs_cluster_name" {
+  description = "ECS cluster name"
+  value       = aws_ecs_cluster.main.name
+}
+
+output "cloudwatch_log_group" {
+  description = "CloudWatch log group for container logs"
+  value       = aws_cloudwatch_log_group.app.name
+}
+
+output "users_table_name" {
+  description = "DynamoDB table for users"
+  value       = aws_dynamodb_table.users.name
+}
+
+output "todos_table_name" {
+  description = "DynamoDB table for todos"
+  value       = aws_dynamodb_table.todos.name
+}
