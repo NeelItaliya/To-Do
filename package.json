@@ -1,0 +1,35 @@
+{
+  "name": "cicd-todo-pipeline",
+  "version": "1.0.0",
+  "description": "Sample To-Do REST API for an automated CI/CD pipeline (DevOps project)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --runInBand --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "keywords": [
+    "devops",
+    "ci-cd",
+    "docker",
+    "express",
+    "kubernetes"
+  ],
+  "author": "Neel Italiya",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
