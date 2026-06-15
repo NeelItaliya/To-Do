@@ -4,3 +4,10 @@ coverage/
 credentials.md
 Automated CI_CD Pipeline for a Web Application (DevOps Project).docx
 CLAUDE.md
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
