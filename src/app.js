@@ -29,12 +29,12 @@ function authMiddleware(req, res, next) {
   }
 }
 
-function createApp() {
-  const userStore = new UserStore({
+function createApp({ userStore: injectedUserStore, todoStore: injectedTodoStore } = {}) {
+  const userStore = injectedUserStore || new UserStore({
     tableName: process.env.USERS_TABLE || 'to-do-users',
     docClient,
   });
-  const todoStore = new TodoStore({
+  const todoStore = injectedTodoStore || new TodoStore({
     tableName: process.env.TODOS_TABLE || 'to-do-todos',
     docClient,
   });
