@@ -38,3 +38,15 @@ variable "task_memory" {
   type        = number
   default     = 512
 }
+
+variable "users_table_name" {
+  description = "DynamoDB table name for users"
+  type        = string
+  default     = "to-do-users"
+}
+
+variable "todos_table_name" {
+  description = "DynamoDB table name for todos"
+  type        = string
+  default     = "to-do-todos"
+}
