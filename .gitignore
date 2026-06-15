@@ -1,0 +1,6 @@
+node_modules/
+coverage/
+.env
+credentials.md
+Automated CI_CD Pipeline for a Web Application (DevOps Project).docx
+CLAUDE.md
