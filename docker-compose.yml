@@ -10,6 +10,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - AWS_REGION=ap-south-1
+      - USERS_TABLE=to-do-users
+      - TODOS_TABLE=to-do-todos
+      - JWT_SECRET=change-me-for-local-dev
     healthcheck:
       test:
         [

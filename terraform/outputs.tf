@@ -1,21 +1,26 @@
-output "app_url" {
-  description = "URL to access the To-Do application"
-  value       = "http://${aws_lb.main.dns_name}"
+output "cluster_name" {
+  description = "EKS cluster name"
+  value       = aws_eks_cluster.main.name
 }
 
-output "alb_dns_name" {
-  description = "Raw DNS name of the Application Load Balancer"
-  value       = aws_lb.main.dns_name
+output "cluster_endpoint" {
+  description = "EKS cluster API endpoint"
+  value       = aws_eks_cluster.main.endpoint
 }
 
-output "ecs_cluster_name" {
-  description = "ECS cluster name"
-  value       = aws_ecs_cluster.main.name
+output "cluster_region" {
+  description = "AWS region"
+  value       = var.aws_region
 }
 
-output "cloudwatch_log_group" {
-  description = "CloudWatch log group for container logs"
-  value       = aws_cloudwatch_log_group.app.name
+output "app_irsa_role_arn" {
+  description = "IAM role ARN for the app ServiceAccount (IRSA)"
+  value       = aws_iam_role.app_irsa.arn
+}
+
+output "lbc_irsa_role_arn" {
+  description = "IAM role ARN for the AWS Load Balancer Controller (IRSA)"
+  value       = aws_iam_role.lbc_irsa.arn
 }
 
 output "users_table_name" {
