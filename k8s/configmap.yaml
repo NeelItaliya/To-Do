@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: to-do-config
+  namespace: to-do
+data:
+  NODE_ENV: "production"
+  PORT: "3000"
+  AWS_REGION: "ap-south-1"
+  USERS_TABLE: "to-do-users"
+  TODOS_TABLE: "to-do-todos"

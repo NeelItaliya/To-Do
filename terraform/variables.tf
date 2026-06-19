@@ -21,22 +21,16 @@ variable "app_port" {
   default     = 3000
 }
 
-variable "desired_count" {
-  description = "Number of ECS Fargate tasks to run"
+variable "node_instance_type" {
+  description = "EC2 instance type for EKS worker nodes"
+  type        = string
+  default     = "t3.small"
+}
+
+variable "node_desired_count" {
+  description = "Desired number of EKS worker nodes"
   type        = number
   default     = 2
-}
-
-variable "task_cpu" {
-  description = "Fargate task CPU units (256 = 0.25 vCPU)"
-  type        = number
-  default     = 256
-}
-
-variable "task_memory" {
-  description = "Fargate task memory in MB"
-  type        = number
-  default     = 512
 }
 
 variable "users_table_name" {
