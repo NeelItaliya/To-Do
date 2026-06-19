@@ -22,7 +22,7 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Public subnets — ALB lives here
+# Public subnets — ALB and NAT Gateway live here
 resource "aws_subnet" "public" {
   count                   = 2
   vpc_id                  = aws_vpc.main.id
@@ -31,13 +31,15 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    Name    = "${var.project_name}-public-${count.index + 1}"
-    Project = var.project_name
-    Type    = "public"
+    Name                                        = "${var.project_name}-public-${count.index + 1}"
+    Project                                     = var.project_name
+    Type                                        = "public"
+    "kubernetes.io/role/elb"                    = "1"
+    "kubernetes.io/cluster/${var.project_name}" = "owned"
   }
 }
 
-# Private subnets — ECS Fargate tasks run here
+# Private subnets — EKS nodes run here
 resource "aws_subnet" "private" {
   count             = 2
   vpc_id            = aws_vpc.main.id
@@ -45,13 +47,14 @@ resource "aws_subnet" "private" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = {
-    Name    = "${var.project_name}-private-${count.index + 1}"
-    Project = var.project_name
-    Type    = "private"
+    Name                                        = "${var.project_name}-private-${count.index + 1}"
+    Project                                     = var.project_name
+    Type                                        = "private"
+    "kubernetes.io/role/internal-elb"           = "1"
+    "kubernetes.io/cluster/${var.project_name}" = "owned"
   }
 }
 
-# Single NAT Gateway in the first public subnet (tasks need outbound internet to pull images)
 resource "aws_eip" "nat" {
   domain = "vpc"
 

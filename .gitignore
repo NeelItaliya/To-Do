@@ -10,4 +10,3 @@ CLAUDE.md
 *.tfstate
 *.tfstate.backup
 *.tfvars
-.terraform.lock.hcl

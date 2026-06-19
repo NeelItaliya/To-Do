@@ -1,0 +1,1541 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.7",
+  "serial": 34,
+  "lineage": "7d401d30-1de0-78b1-3582-b7defe1f00c6",
+  "outputs": {
+    "alb_dns_name": {
+      "value": "to-do-alb-1070764630.ap-south-1.elb.amazonaws.com",
+      "type": "string"
+    },
+    "app_url": {
+      "value": "http://to-do-alb-1070764630.ap-south-1.elb.amazonaws.com",
+      "type": "string"
+    },
+    "cloudwatch_log_group": {
+      "value": "/ecs/to-do",
+      "type": "string"
+    },
+    "ecs_cluster_name": {
+      "value": "to-do-cluster",
+      "type": "string"
+    },
+    "todos_table_name": {
+      "value": "to-do-todos",
+      "type": "string"
+    },
+    "users_table_name": {
+      "value": "to-do-users",
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "mode": "data",
+      "type": "aws_availability_zones",
+      "name": "available",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "all_availability_zones": null,
+            "exclude_names": null,
+            "exclude_zone_ids": null,
+            "filter": null,
+            "group_names": [
+              "ap-south-1-zg-1"
+            ],
+            "id": "ap-south-1",
+            "names": [
+              "ap-south-1a",
+              "ap-south-1b",
+              "ap-south-1c"
+            ],
+            "state": "available",
+            "timeouts": null,
+            "zone_ids": [
+              "aps1-az1",
+              "aps1-az3",
+              "aps1-az2"
+            ]
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "data",
+      "type": "aws_iam_policy_document",
+      "name": "ecs_task_execution_assume_role",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "1077804475",
+            "json": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Action\": \"sts:AssumeRole\",\n      \"Principal\": {\n        \"Service\": \"ecs-tasks.amazonaws.com\"\n      }\n    }\n  ]\n}",
+            "minified_json": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"sts:AssumeRole\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"}}]}",
+            "override_json": null,
+            "override_policy_documents": null,
+            "policy_id": null,
+            "source_json": null,
+            "source_policy_documents": null,
+            "statement": [
+              {
+                "actions": [
+                  "sts:AssumeRole"
+                ],
+                "condition": [],
+                "effect": "Allow",
+                "not_actions": [],
+                "not_principals": [],
+                "not_resources": [],
+                "principals": [
+                  {
+                    "identifiers": [
+                      "ecs-tasks.amazonaws.com"
+                    ],
+                    "type": "Service"
+                  }
+                ],
+                "resources": [],
+                "sid": ""
+              }
+            ],
+            "version": "2012-10-17"
+          },
+          "sensitive_attributes": []
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_cloudwatch_log_group",
+      "name": "app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:logs:ap-south-1:835590170330:log-group:/ecs/to-do",
+            "id": "/ecs/to-do",
+            "kms_key_id": "",
+            "log_group_class": "STANDARD",
+            "name": "/ecs/to-do",
+            "name_prefix": "",
+            "retention_in_days": 7,
+            "skip_destroy": false,
+            "tags": {
+              "Name": "to-do-logs",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-logs",
+              "Project": "to-do"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_dynamodb_table",
+      "name": "todos",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:dynamodb:ap-south-1:835590170330:table/to-do-todos",
+            "attribute": [
+              {
+                "name": "todoId",
+                "type": "S"
+              },
+              {
+                "name": "userId",
+                "type": "S"
+              }
+            ],
+            "billing_mode": "PAY_PER_REQUEST",
+            "deletion_protection_enabled": false,
+            "global_secondary_index": [],
+            "hash_key": "userId",
+            "id": "to-do-todos",
+            "import_table": [],
+            "local_secondary_index": [],
+            "name": "to-do-todos",
+            "on_demand_throughput": [],
+            "point_in_time_recovery": [
+              {
+                "enabled": false,
+                "recovery_period_in_days": 0
+              }
+            ],
+            "range_key": "todoId",
+            "read_capacity": 0,
+            "replica": [],
+            "restore_date_time": null,
+            "restore_source_name": null,
+            "restore_source_table_arn": null,
+            "restore_to_latest_time": null,
+            "server_side_encryption": [],
+            "stream_arn": "",
+            "stream_enabled": false,
+            "stream_label": "",
+            "stream_view_type": "",
+            "table_class": "STANDARD",
+            "tags": {
+              "Name": "to-do-todos",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-todos",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "ttl": [
+              {
+                "attribute_name": "",
+                "enabled": false
+              }
+            ],
+            "write_capacity": 0
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjozNjAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_dynamodb_table",
+      "name": "users",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:dynamodb:ap-south-1:835590170330:table/to-do-users",
+            "attribute": [
+              {
+                "name": "username",
+                "type": "S"
+              }
+            ],
+            "billing_mode": "PAY_PER_REQUEST",
+            "deletion_protection_enabled": false,
+            "global_secondary_index": [],
+            "hash_key": "username",
+            "id": "to-do-users",
+            "import_table": [],
+            "local_secondary_index": [],
+            "name": "to-do-users",
+            "on_demand_throughput": [],
+            "point_in_time_recovery": [
+              {
+                "enabled": false,
+                "recovery_period_in_days": 0
+              }
+            ],
+            "range_key": null,
+            "read_capacity": 0,
+            "replica": [],
+            "restore_date_time": null,
+            "restore_source_name": null,
+            "restore_source_table_arn": null,
+            "restore_to_latest_time": null,
+            "server_side_encryption": [],
+            "stream_arn": "",
+            "stream_enabled": false,
+            "stream_label": "",
+            "stream_view_type": "",
+            "table_class": "STANDARD",
+            "tags": {
+              "Name": "to-do-users",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-users",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "ttl": [
+              {
+                "attribute_name": "",
+                "enabled": false
+              }
+            ],
+            "write_capacity": 0
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJkZWxldGUiOjYwMDAwMDAwMDAwMCwidXBkYXRlIjozNjAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_cluster",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ecs:ap-south-1:835590170330:cluster/to-do-cluster",
+            "configuration": [],
+            "id": "arn:aws:ecs:ap-south-1:835590170330:cluster/to-do-cluster",
+            "name": "to-do-cluster",
+            "service_connect_defaults": [],
+            "setting": [
+              {
+                "name": "containerInsights",
+                "value": "disabled"
+              }
+            ],
+            "tags": {
+              "Name": "to-do-cluster",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-cluster",
+              "Project": "to-do"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_service",
+      "name": "app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "alarms": [],
+            "availability_zone_rebalancing": "DISABLED",
+            "capacity_provider_strategy": [],
+            "cluster": "arn:aws:ecs:ap-south-1:835590170330:cluster/to-do-cluster",
+            "deployment_circuit_breaker": [
+              {
+                "enable": false,
+                "rollback": false
+              }
+            ],
+            "deployment_controller": [
+              {
+                "type": "ECS"
+              }
+            ],
+            "deployment_maximum_percent": 200,
+            "deployment_minimum_healthy_percent": 100,
+            "desired_count": 2,
+            "enable_ecs_managed_tags": false,
+            "enable_execute_command": false,
+            "force_delete": null,
+            "force_new_deployment": null,
+            "health_check_grace_period_seconds": 0,
+            "iam_role": "/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+            "id": "arn:aws:ecs:ap-south-1:835590170330:service/to-do-cluster/to-do-service",
+            "launch_type": "FARGATE",
+            "load_balancer": [
+              {
+                "container_name": "to-do",
+                "container_port": 3000,
+                "elb_name": "",
+                "target_group_arn": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:targetgroup/to-do-tg/20e3e8d2757b983a"
+              }
+            ],
+            "name": "to-do-service",
+            "network_configuration": [
+              {
+                "assign_public_ip": false,
+                "security_groups": [
+                  "sg-07e42da5491298be7"
+                ],
+                "subnets": [
+                  "subnet-0d0bb1a427256ce36",
+                  "subnet-0d231e54d0e6e2573"
+                ]
+              }
+            ],
+            "ordered_placement_strategy": [],
+            "placement_constraints": [],
+            "platform_version": "LATEST",
+            "propagate_tags": "NONE",
+            "scheduling_strategy": "REPLICA",
+            "service_connect_configuration": [],
+            "service_registries": [],
+            "tags": {
+              "Name": "to-do-service",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-service",
+              "Project": "to-do"
+            },
+            "task_definition": "arn:aws:ecs:ap-south-1:835590170330:task-definition/to-do:2",
+            "timeouts": null,
+            "triggers": {},
+            "volume_configuration": [],
+            "vpc_lattice_configurations": [],
+            "wait_for_steady_state": false
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_ecs_cluster.main",
+            "aws_ecs_task_definition.app",
+            "aws_iam_role.ecs_task",
+            "aws_iam_role.ecs_task_execution",
+            "aws_iam_role_policy_attachment.ecs_task_execution",
+            "aws_lb_listener.http",
+            "aws_lb_target_group.app",
+            "aws_security_group.ecs_tasks",
+            "aws_subnet.private",
+            "data.aws_iam_policy_document.ecs_task_execution_assume_role"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_ecs_task_definition",
+      "name": "app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ecs:ap-south-1:835590170330:task-definition/to-do:2",
+            "arn_without_revision": "arn:aws:ecs:ap-south-1:835590170330:task-definition/to-do",
+            "container_definitions": "[{\"environment\":[{\"name\":\"AWS_REGION\",\"value\":\"ap-south-1\"},{\"name\":\"NODE_ENV\",\"value\":\"production\"},{\"name\":\"PORT\",\"value\":\"3000\"},{\"name\":\"TODOS_TABLE\",\"value\":\"to-do-todos\"},{\"name\":\"USERS_TABLE\",\"value\":\"to-do-users\"}],\"essential\":true,\"healthCheck\":{\"command\":[\"CMD-SHELL\",\"node -e 'require(\\\"http\\\").get(\\\"http://localhost:3000/health\\\",r=\u003eprocess.exit(r.statusCode===200?0:1)).on(\\\"error\\\",()=\u003eprocess.exit(1))'\"],\"interval\":30,\"retries\":3,\"startPeriod\":15,\"timeout\":5},\"image\":\"neelitaliya/to-do:latest\",\"logConfiguration\":{\"logDriver\":\"awslogs\",\"options\":{\"awslogs-group\":\"/ecs/to-do\",\"awslogs-region\":\"ap-south-1\",\"awslogs-stream-prefix\":\"ecs\"}},\"mountPoints\":[],\"name\":\"to-do\",\"portMappings\":[{\"containerPort\":3000,\"hostPort\":3000,\"protocol\":\"tcp\"}],\"systemControls\":[],\"volumesFrom\":[]}]",
+            "cpu": "256",
+            "enable_fault_injection": false,
+            "ephemeral_storage": [],
+            "execution_role_arn": "arn:aws:iam::835590170330:role/to-do-ecs-execution-role",
+            "family": "to-do",
+            "id": "to-do",
+            "inference_accelerator": [],
+            "ipc_mode": "",
+            "memory": "512",
+            "network_mode": "awsvpc",
+            "pid_mode": "",
+            "placement_constraints": [],
+            "proxy_configuration": [],
+            "requires_compatibilities": [
+              "FARGATE"
+            ],
+            "revision": 2,
+            "runtime_platform": [],
+            "skip_destroy": false,
+            "tags": {
+              "Name": "to-do-task",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-task",
+              "Project": "to-do"
+            },
+            "task_role_arn": "arn:aws:iam::835590170330:role/to-do-ecs-task-role",
+            "track_latest": false,
+            "volume": []
+          },
+          "sensitive_attributes": [],
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ==",
+          "dependencies": [
+            "aws_iam_role.ecs_task",
+            "aws_iam_role.ecs_task_execution",
+            "data.aws_iam_policy_document.ecs_task_execution_assume_role"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_eip",
+      "name": "nat",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "address": null,
+            "allocation_id": "eipalloc-052a5d652ce33ddcf",
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:elastic-ip/eipalloc-052a5d652ce33ddcf",
+            "associate_with_private_ip": null,
+            "association_id": "eipassoc-0f4ba9860f8e713bd",
+            "carrier_ip": "",
+            "customer_owned_ip": "",
+            "customer_owned_ipv4_pool": "",
+            "domain": "vpc",
+            "id": "eipalloc-052a5d652ce33ddcf",
+            "instance": "",
+            "ipam_pool_id": null,
+            "network_border_group": "ap-south-1",
+            "network_interface": "eni-0f04c713fd23f3a26",
+            "private_dns": "ip-10-0-1-59.ap-south-1.compute.internal",
+            "private_ip": "10.0.1.59",
+            "ptr_record": "",
+            "public_dns": "ec2-13-207-252-99.ap-south-1.compute.amazonaws.com",
+            "public_ip": "13.207.252.99",
+            "public_ipv4_pool": "amazon",
+            "tags": {
+              "Name": "to-do-nat-eip",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-nat-eip",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc": true
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiZGVsZXRlIjoxODAwMDAwMDAwMDAsInJlYWQiOjkwMDAwMDAwMDAwMCwidXBkYXRlIjozMDAwMDAwMDAwMDB9fQ=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "ecs_task",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::835590170330:role/to-do-ecs-task-role",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+            "create_date": "2026-06-15T11:03:00Z",
+            "description": "",
+            "force_detach_policies": false,
+            "id": "to-do-ecs-task-role",
+            "inline_policy": [],
+            "managed_policy_arns": [],
+            "max_session_duration": 3600,
+            "name": "to-do-ecs-task-role",
+            "name_prefix": "",
+            "path": "/",
+            "permissions_boundary": "",
+            "tags": {
+              "Name": "to-do-ecs-task-role",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-ecs-task-role",
+              "Project": "to-do"
+            },
+            "unique_id": "AROA4FDIOE3NCHTKRGNPQ"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "data.aws_iam_policy_document.ecs_task_execution_assume_role"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role",
+      "name": "ecs_task_execution",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:iam::835590170330:role/to-do-ecs-execution-role",
+            "assume_role_policy": "{\"Statement\":[{\"Action\":\"sts:AssumeRole\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"}}],\"Version\":\"2012-10-17\"}",
+            "create_date": "2026-06-15T10:04:59Z",
+            "description": "",
+            "force_detach_policies": false,
+            "id": "to-do-ecs-execution-role",
+            "inline_policy": [],
+            "managed_policy_arns": [
+              "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+            ],
+            "max_session_duration": 3600,
+            "name": "to-do-ecs-execution-role",
+            "name_prefix": "",
+            "path": "/",
+            "permissions_boundary": "",
+            "tags": {
+              "Name": "to-do-ecs-execution-role",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-ecs-execution-role",
+              "Project": "to-do"
+            },
+            "unique_id": "AROA4FDIOE3NDDT5HIKWS"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "data.aws_iam_policy_document.ecs_task_execution_assume_role"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role_policy",
+      "name": "ecs_task_dynamodb",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "to-do-ecs-task-role:to-do-dynamodb-policy",
+            "name": "to-do-dynamodb-policy",
+            "name_prefix": "",
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Action\":[\"dynamodb:GetItem\",\"dynamodb:PutItem\",\"dynamodb:DeleteItem\",\"dynamodb:Query\",\"dynamodb:UpdateItem\"],\"Effect\":\"Allow\",\"Resource\":[\"arn:aws:dynamodb:ap-south-1:835590170330:table/to-do-users\",\"arn:aws:dynamodb:ap-south-1:835590170330:table/to-do-todos\"]}]}",
+            "role": "to-do-ecs-task-role"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_dynamodb_table.todos",
+            "aws_dynamodb_table.users",
+            "aws_iam_role.ecs_task",
+            "data.aws_iam_policy_document.ecs_task_execution_assume_role"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_iam_role_policy_attachment",
+      "name": "ecs_task_execution",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "id": "to-do-ecs-execution-role-20260615100500659200000001",
+            "policy_arn": "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+            "role": "to-do-ecs-execution-role"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_iam_role.ecs_task_execution",
+            "data.aws_iam_policy_document.ecs_task_execution_assume_role"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_internet_gateway",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:internet-gateway/igw-0545fa0ba8f0b2c37",
+            "id": "igw-0545fa0ba8f0b2c37",
+            "owner_id": "835590170330",
+            "tags": {
+              "Name": "to-do-igw",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-igw",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "access_logs": [
+              {
+                "bucket": "",
+                "enabled": false,
+                "prefix": ""
+              }
+            ],
+            "arn": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:loadbalancer/app/to-do-alb/109cd815355e88d7",
+            "arn_suffix": "app/to-do-alb/109cd815355e88d7",
+            "client_keep_alive": 3600,
+            "connection_logs": [
+              {
+                "bucket": "",
+                "enabled": false,
+                "prefix": ""
+              }
+            ],
+            "customer_owned_ipv4_pool": "",
+            "desync_mitigation_mode": "defensive",
+            "dns_name": "to-do-alb-1070764630.ap-south-1.elb.amazonaws.com",
+            "dns_record_client_routing_policy": null,
+            "drop_invalid_header_fields": false,
+            "enable_cross_zone_load_balancing": true,
+            "enable_deletion_protection": false,
+            "enable_http2": true,
+            "enable_tls_version_and_cipher_suite_headers": false,
+            "enable_waf_fail_open": false,
+            "enable_xff_client_port": false,
+            "enable_zonal_shift": false,
+            "enforce_security_group_inbound_rules_on_private_link_traffic": "",
+            "id": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:loadbalancer/app/to-do-alb/109cd815355e88d7",
+            "idle_timeout": 60,
+            "internal": false,
+            "ip_address_type": "ipv4",
+            "ipam_pools": [],
+            "load_balancer_type": "application",
+            "minimum_load_balancer_capacity": [],
+            "name": "to-do-alb",
+            "name_prefix": "",
+            "preserve_host_header": false,
+            "security_groups": [
+              "sg-03918e3fa0d4f7027"
+            ],
+            "subnet_mapping": [
+              {
+                "allocation_id": "",
+                "ipv6_address": "",
+                "outpost_id": "",
+                "private_ipv4_address": "",
+                "subnet_id": "subnet-05b158edbcc2f57ef"
+              },
+              {
+                "allocation_id": "",
+                "ipv6_address": "",
+                "outpost_id": "",
+                "private_ipv4_address": "",
+                "subnet_id": "subnet-0cd0436a7a8c97d4c"
+              }
+            ],
+            "subnets": [
+              "subnet-05b158edbcc2f57ef",
+              "subnet-0cd0436a7a8c97d4c"
+            ],
+            "tags": {
+              "Name": "to-do-alb",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-alb",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc",
+            "xff_header_processing_mode": "append",
+            "zone_id": "ZP97RAFLXTNZK"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6NjAwMDAwMDAwMDAwLCJ1cGRhdGUiOjYwMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_security_group.alb",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_listener",
+      "name": "http",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "alpn_policy": null,
+            "arn": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:listener/app/to-do-alb/109cd815355e88d7/9263af7bf879c733",
+            "certificate_arn": null,
+            "default_action": [
+              {
+                "authenticate_cognito": [],
+                "authenticate_oidc": [],
+                "fixed_response": [],
+                "forward": [],
+                "order": 1,
+                "redirect": [],
+                "target_group_arn": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:targetgroup/to-do-tg/20e3e8d2757b983a",
+                "type": "forward"
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:listener/app/to-do-alb/109cd815355e88d7/9263af7bf879c733",
+            "load_balancer_arn": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:loadbalancer/app/to-do-alb/109cd815355e88d7",
+            "mutual_authentication": [],
+            "port": 80,
+            "protocol": "HTTP",
+            "routing_http_request_x_amzn_mtls_clientcert_header_name": null,
+            "routing_http_request_x_amzn_mtls_clientcert_issuer_header_name": null,
+            "routing_http_request_x_amzn_mtls_clientcert_leaf_header_name": null,
+            "routing_http_request_x_amzn_mtls_clientcert_serial_number_header_name": null,
+            "routing_http_request_x_amzn_mtls_clientcert_subject_header_name": null,
+            "routing_http_request_x_amzn_mtls_clientcert_validity_header_name": null,
+            "routing_http_request_x_amzn_tls_cipher_suite_header_name": null,
+            "routing_http_request_x_amzn_tls_version_header_name": null,
+            "routing_http_response_access_control_allow_credentials_header_value": "",
+            "routing_http_response_access_control_allow_headers_header_value": "",
+            "routing_http_response_access_control_allow_methods_header_value": "",
+            "routing_http_response_access_control_allow_origin_header_value": "",
+            "routing_http_response_access_control_expose_headers_header_value": "",
+            "routing_http_response_access_control_max_age_header_value": "",
+            "routing_http_response_content_security_policy_header_value": "",
+            "routing_http_response_server_enabled": true,
+            "routing_http_response_strict_transport_security_header_value": "",
+            "routing_http_response_x_content_type_options_header_value": "",
+            "routing_http_response_x_frame_options_header_value": "",
+            "ssl_policy": "",
+            "tags": {},
+            "tags_all": {},
+            "tcp_idle_timeout_seconds": null,
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsInVwZGF0ZSI6MzAwMDAwMDAwMDAwfX0=",
+          "dependencies": [
+            "aws_lb.main",
+            "aws_lb_target_group.app",
+            "aws_security_group.alb",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_lb_target_group",
+      "name": "app",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:targetgroup/to-do-tg/20e3e8d2757b983a",
+            "arn_suffix": "targetgroup/to-do-tg/20e3e8d2757b983a",
+            "connection_termination": null,
+            "deregistration_delay": "300",
+            "health_check": [
+              {
+                "enabled": true,
+                "healthy_threshold": 2,
+                "interval": 30,
+                "matcher": "200",
+                "path": "/health",
+                "port": "traffic-port",
+                "protocol": "HTTP",
+                "timeout": 5,
+                "unhealthy_threshold": 3
+              }
+            ],
+            "id": "arn:aws:elasticloadbalancing:ap-south-1:835590170330:targetgroup/to-do-tg/20e3e8d2757b983a",
+            "ip_address_type": "ipv4",
+            "lambda_multi_value_headers_enabled": false,
+            "load_balancer_arns": [
+              "arn:aws:elasticloadbalancing:ap-south-1:835590170330:loadbalancer/app/to-do-alb/109cd815355e88d7"
+            ],
+            "load_balancing_algorithm_type": "round_robin",
+            "load_balancing_anomaly_mitigation": "off",
+            "load_balancing_cross_zone_enabled": "use_load_balancer_configuration",
+            "name": "to-do-tg",
+            "name_prefix": "",
+            "port": 3000,
+            "preserve_client_ip": null,
+            "protocol": "HTTP",
+            "protocol_version": "HTTP1",
+            "proxy_protocol_v2": false,
+            "slow_start": 0,
+            "stickiness": [
+              {
+                "cookie_duration": 86400,
+                "cookie_name": "",
+                "enabled": false,
+                "type": "lb_cookie"
+              }
+            ],
+            "tags": {
+              "Name": "to-do-tg",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-tg",
+              "Project": "to-do"
+            },
+            "target_failover": [
+              {
+                "on_deregistration": null,
+                "on_unhealthy": null
+              }
+            ],
+            "target_group_health": [
+              {
+                "dns_failover": [
+                  {
+                    "minimum_healthy_targets_count": "1",
+                    "minimum_healthy_targets_percentage": "off"
+                  }
+                ],
+                "unhealthy_state_routing": [
+                  {
+                    "minimum_healthy_targets_count": 1,
+                    "minimum_healthy_targets_percentage": "off"
+                  }
+                ]
+              }
+            ],
+            "target_health_state": [
+              {
+                "enable_unhealthy_connection_termination": null,
+                "unhealthy_draining_interval": null
+              }
+            ],
+            "target_type": "ip",
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_nat_gateway",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allocation_id": "eipalloc-052a5d652ce33ddcf",
+            "association_id": "eipassoc-0f4ba9860f8e713bd",
+            "connectivity_type": "public",
+            "id": "nat-0e9a4b20137649592",
+            "network_interface_id": "eni-0f04c713fd23f3a26",
+            "private_ip": "10.0.1.59",
+            "public_ip": "13.207.252.99",
+            "secondary_allocation_ids": [],
+            "secondary_private_ip_address_count": 0,
+            "secondary_private_ip_addresses": [],
+            "subnet_id": "subnet-05b158edbcc2f57ef",
+            "tags": {
+              "Name": "to-do-nat",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-nat",
+              "Project": "to-do"
+            },
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTgwMDAwMDAwMDAwMCwidXBkYXRlIjo2MDAwMDAwMDAwMDB9fQ==",
+          "dependencies": [
+            "aws_eip.nat",
+            "aws_internet_gateway.main",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route_table",
+      "name": "private",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:route-table/rtb-0d6a9eddf83c647c2",
+            "id": "rtb-0d6a9eddf83c647c2",
+            "owner_id": "835590170330",
+            "propagating_vgws": [],
+            "route": [
+              {
+                "carrier_gateway_id": "",
+                "cidr_block": "0.0.0.0/0",
+                "core_network_arn": "",
+                "destination_prefix_list_id": "",
+                "egress_only_gateway_id": "",
+                "gateway_id": "",
+                "ipv6_cidr_block": "",
+                "local_gateway_id": "",
+                "nat_gateway_id": "nat-0e9a4b20137649592",
+                "network_interface_id": "",
+                "transit_gateway_id": "",
+                "vpc_endpoint_id": "",
+                "vpc_peering_connection_id": ""
+              }
+            ],
+            "tags": {
+              "Name": "to-do-private-rt",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-private-rt",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_eip.nat",
+            "aws_internet_gateway.main",
+            "aws_nat_gateway.main",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route_table",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:route-table/rtb-053b3114d237763bf",
+            "id": "rtb-053b3114d237763bf",
+            "owner_id": "835590170330",
+            "propagating_vgws": [],
+            "route": [
+              {
+                "carrier_gateway_id": "",
+                "cidr_block": "0.0.0.0/0",
+                "core_network_arn": "",
+                "destination_prefix_list_id": "",
+                "egress_only_gateway_id": "",
+                "gateway_id": "igw-0545fa0ba8f0b2c37",
+                "ipv6_cidr_block": "",
+                "local_gateway_id": "",
+                "nat_gateway_id": "",
+                "network_interface_id": "",
+                "transit_gateway_id": "",
+                "vpc_endpoint_id": "",
+                "vpc_peering_connection_id": ""
+              }
+            ],
+            "tags": {
+              "Name": "to-do-public-rt",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-public-rt",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_internet_gateway.main",
+            "aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route_table_association",
+      "name": "private",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 0,
+          "attributes": {
+            "gateway_id": "",
+            "id": "rtbassoc-0d9eb68e045912bb8",
+            "route_table_id": "rtb-0d6a9eddf83c647c2",
+            "subnet_id": "subnet-0d231e54d0e6e2573",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_eip.nat",
+            "aws_internet_gateway.main",
+            "aws_nat_gateway.main",
+            "aws_route_table.private",
+            "aws_subnet.private",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 0,
+          "attributes": {
+            "gateway_id": "",
+            "id": "rtbassoc-05b38d099a531dcb1",
+            "route_table_id": "rtb-0d6a9eddf83c647c2",
+            "subnet_id": "subnet-0d0bb1a427256ce36",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_eip.nat",
+            "aws_internet_gateway.main",
+            "aws_nat_gateway.main",
+            "aws_route_table.private",
+            "aws_subnet.private",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_route_table_association",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 0,
+          "attributes": {
+            "gateway_id": "",
+            "id": "rtbassoc-085e84fb764c22266",
+            "route_table_id": "rtb-053b3114d237763bf",
+            "subnet_id": "subnet-05b158edbcc2f57ef",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_internet_gateway.main",
+            "aws_route_table.public",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 0,
+          "attributes": {
+            "gateway_id": "",
+            "id": "rtbassoc-08a9e7c9f894ed507",
+            "route_table_id": "rtb-053b3114d237763bf",
+            "subnet_id": "subnet-0cd0436a7a8c97d4c",
+            "timeouts": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjozMDAwMDAwMDAwMDAsImRlbGV0ZSI6MzAwMDAwMDAwMDAwLCJ1cGRhdGUiOjEyMDAwMDAwMDAwMH19",
+          "dependencies": [
+            "aws_internet_gateway.main",
+            "aws_route_table.public",
+            "aws_subnet.public",
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "alb",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:security-group/sg-03918e3fa0d4f7027",
+            "description": "Allow inbound HTTP to the ALB",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-03918e3fa0d4f7027",
+            "ingress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 80,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [],
+                "self": false,
+                "to_port": 80
+              }
+            ],
+            "name": "to-do-alb-sg",
+            "name_prefix": "",
+            "owner_id": "835590170330",
+            "revoke_rules_on_delete": false,
+            "tags": {
+              "Name": "to-do-alb-sg",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-alb-sg",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6OTAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_security_group",
+      "name": "ecs_tasks",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:security-group/sg-07e42da5491298be7",
+            "description": "Allow traffic from ALB to ECS Fargate tasks only",
+            "egress": [
+              {
+                "cidr_blocks": [
+                  "0.0.0.0/0"
+                ],
+                "description": "",
+                "from_port": 0,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "-1",
+                "security_groups": [],
+                "self": false,
+                "to_port": 0
+              }
+            ],
+            "id": "sg-07e42da5491298be7",
+            "ingress": [
+              {
+                "cidr_blocks": [],
+                "description": "",
+                "from_port": 3000,
+                "ipv6_cidr_blocks": [],
+                "prefix_list_ids": [],
+                "protocol": "tcp",
+                "security_groups": [
+                  "sg-03918e3fa0d4f7027"
+                ],
+                "self": false,
+                "to_port": 3000
+              }
+            ],
+            "name": "to-do-ecs-tasks-sg",
+            "name_prefix": "",
+            "owner_id": "835590170330",
+            "revoke_rules_on_delete": false,
+            "tags": {
+              "Name": "to-do-ecs-tasks-sg",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-ecs-tasks-sg",
+              "Project": "to-do"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6OTAwMDAwMDAwMDAwfSwic2NoZW1hX3ZlcnNpb24iOiIxIn0=",
+          "dependencies": [
+            "aws_security_group.alb",
+            "aws_vpc.main"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "private",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:subnet/subnet-0d231e54d0e6e2573",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "ap-south-1a",
+            "availability_zone_id": "aps1-az1",
+            "cidr_block": "10.0.3.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-0d231e54d0e6e2573",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": false,
+            "outpost_arn": "",
+            "owner_id": "835590170330",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "to-do-private-1",
+              "Project": "to-do",
+              "Type": "private"
+            },
+            "tags_all": {
+              "Name": "to-do-private-1",
+              "Project": "to-do",
+              "Type": "private"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:subnet/subnet-0d0bb1a427256ce36",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "ap-south-1b",
+            "availability_zone_id": "aps1-az3",
+            "cidr_block": "10.0.4.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-0d0bb1a427256ce36",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": false,
+            "outpost_arn": "",
+            "owner_id": "835590170330",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "to-do-private-2",
+              "Project": "to-do",
+              "Type": "private"
+            },
+            "tags_all": {
+              "Name": "to-do-private-2",
+              "Project": "to-do",
+              "Type": "private"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_subnet",
+      "name": "public",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "index_key": 0,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:subnet/subnet-05b158edbcc2f57ef",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "ap-south-1a",
+            "availability_zone_id": "aps1-az1",
+            "cidr_block": "10.0.1.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-05b158edbcc2f57ef",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": true,
+            "outpost_arn": "",
+            "owner_id": "835590170330",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "to-do-public-1",
+              "Project": "to-do",
+              "Type": "public"
+            },
+            "tags_all": {
+              "Name": "to-do-public-1",
+              "Project": "to-do",
+              "Type": "public"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        },
+        {
+          "index_key": 1,
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:subnet/subnet-0cd0436a7a8c97d4c",
+            "assign_ipv6_address_on_creation": false,
+            "availability_zone": "ap-south-1b",
+            "availability_zone_id": "aps1-az3",
+            "cidr_block": "10.0.2.0/24",
+            "customer_owned_ipv4_pool": "",
+            "enable_dns64": false,
+            "enable_lni_at_device_index": 0,
+            "enable_resource_name_dns_a_record_on_launch": false,
+            "enable_resource_name_dns_aaaa_record_on_launch": false,
+            "id": "subnet-0cd0436a7a8c97d4c",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_association_id": "",
+            "ipv6_native": false,
+            "map_customer_owned_ip_on_launch": false,
+            "map_public_ip_on_launch": true,
+            "outpost_arn": "",
+            "owner_id": "835590170330",
+            "private_dns_hostname_type_on_launch": "ip-name",
+            "tags": {
+              "Name": "to-do-public-2",
+              "Project": "to-do",
+              "Type": "public"
+            },
+            "tags_all": {
+              "Name": "to-do-public-2",
+              "Project": "to-do",
+              "Type": "public"
+            },
+            "timeouts": null,
+            "vpc_id": "vpc-09e03847cdad0ebdc"
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjo2MDAwMDAwMDAwMDAsImRlbGV0ZSI6MTIwMDAwMDAwMDAwMH0sInNjaGVtYV92ZXJzaW9uIjoiMSJ9",
+          "dependencies": [
+            "aws_vpc.main",
+            "data.aws_availability_zones.available"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "aws_vpc",
+      "name": "main",
+      "provider": "provider[\"registry.terraform.io/hashicorp/aws\"]",
+      "instances": [
+        {
+          "schema_version": 1,
+          "attributes": {
+            "arn": "arn:aws:ec2:ap-south-1:835590170330:vpc/vpc-09e03847cdad0ebdc",
+            "assign_generated_ipv6_cidr_block": false,
+            "cidr_block": "10.0.0.0/16",
+            "default_network_acl_id": "acl-0f1c56df2bb66bb05",
+            "default_route_table_id": "rtb-0eb3905d00df79844",
+            "default_security_group_id": "sg-0fc96097301976531",
+            "dhcp_options_id": "dopt-070f4b382c88f6eca",
+            "enable_dns_hostnames": true,
+            "enable_dns_support": true,
+            "enable_network_address_usage_metrics": false,
+            "id": "vpc-09e03847cdad0ebdc",
+            "instance_tenancy": "default",
+            "ipv4_ipam_pool_id": null,
+            "ipv4_netmask_length": null,
+            "ipv6_association_id": "",
+            "ipv6_cidr_block": "",
+            "ipv6_cidr_block_network_border_group": "",
+            "ipv6_ipam_pool_id": "",
+            "ipv6_netmask_length": 0,
+            "main_route_table_id": "rtb-0eb3905d00df79844",
+            "owner_id": "835590170330",
+            "tags": {
+              "Name": "to-do-vpc",
+              "Project": "to-do"
+            },
+            "tags_all": {
+              "Name": "to-do-vpc",
+              "Project": "to-do"
+            }
+          },
+          "sensitive_attributes": [],
+          "private": "eyJzY2hlbWFfdmVyc2lvbiI6IjEifQ=="
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
