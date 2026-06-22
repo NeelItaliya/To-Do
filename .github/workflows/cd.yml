@@ -24,7 +24,7 @@ jobs:
           aws-region: ap-south-1
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --region ap-south-1 --name to-do-cluster
+        run: aws eks update-kubeconfig --region ap-south-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
 
       - name: Deploy latest image
         run: |
