@@ -44,3 +44,10 @@ variable "todos_table_name" {
   type        = string
   default     = "to-do-todos"
 }
+
+variable "jwt_secret" {
+  description = "JWT secret for token signing"
+  type        = string
+  default     = "change-me-in-production"
+  sensitive   = true
+}

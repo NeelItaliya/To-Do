@@ -2,7 +2,7 @@
 resource "aws_eks_cluster" "main" {
   name     = var.project_name
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.32"
+  version  = "1.35"
 
   vpc_config {
     subnet_ids              = concat(aws_subnet.public[*].id, aws_subnet.private[*].id)
@@ -49,6 +49,11 @@ resource "aws_eks_node_group" "main" {
     Name    = "${var.project_name}-nodes"
     Project = var.project_name
   }
+}
+
+# Auth token for Helm/Kubernetes providers
+data "aws_eks_cluster_auth" "main" {
+  name = aws_eks_cluster.main.name
 }
 
 # OIDC provider for IRSA
