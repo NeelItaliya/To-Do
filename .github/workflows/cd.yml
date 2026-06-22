@@ -1,0 +1,37 @@
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to EKS
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --region ap-south-1 --name to-do-cluster
+
+      - name: Deploy latest image
+        run: |
+          kubectl set image deployment/to-do to-do=neelitaliya/to-do:latest -n to-do
+          kubectl rollout status deployment/to-do -n to-do --timeout=120s
+
+      - name: Validate deployment
+        run: |
+          chmod +x scripts/validate-deploy.sh
+          ./scripts/validate-deploy.sh
