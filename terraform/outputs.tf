@@ -32,3 +32,8 @@ output "todos_table_name" {
   description = "DynamoDB table for todos"
   value       = aws_dynamodb_table.todos.name
 }
+
+output "alb_dns" {
+  description = "ALB DNS — open this in your browser (takes ~2 min to provision)"
+  value       = try(kubernetes_ingress_v1.app.status[0].load_balancer[0].ingress[0].hostname, "provisioning...")
+}
