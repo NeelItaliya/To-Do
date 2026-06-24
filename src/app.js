@@ -3,6 +3,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
+const client = require('prom-client');
 const TodoStore = require('./todoStore');
 const UserStore = require('./userStore');
 
@@ -11,6 +12,25 @@ const JWT_EXPIRY = '7d';
 
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-south-1' });
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
+
+// Prometheus metrics
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+const httpRequestDuration = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [0.05, 0.1, 0.3, 0.5, 1, 2, 5],
+  registers: [register],
+});
+
+const httpRequestTotal = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code'],
+  registers: [register],
+});
 
 function createToken(user) {
   return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
@@ -41,10 +61,28 @@ function createApp({ userStore: injectedUserStore, todoStore: injectedTodoStore 
 
   const app = express();
   app.use(express.json());
+
+  // metrics middleware
+  app.use((req, res, next) => {
+    const end = httpRequestDuration.startTimer();
+    res.on('finish', () => {
+      const route = req.route ? req.route.path : req.path;
+      const labels = { method: req.method, route, status_code: res.statusCode };
+      end(labels);
+      httpRequestTotal.inc(labels);
+    });
+    next();
+  });
+
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
   app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok', uptime: process.uptime() });
+  });
+
+  app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(await register.metrics());
   });
 
   app.post('/api/auth/register', async (req, res, next) => {
