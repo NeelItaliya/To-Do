@@ -156,6 +156,7 @@ resource "kubernetes_service" "app" {
     }
 
     port {
+      name        = "http"
       protocol    = "TCP"
       port        = 80
       target_port = tostring(var.app_port)
