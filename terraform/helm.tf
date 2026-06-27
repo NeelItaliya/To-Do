@@ -64,6 +64,16 @@ resource "helm_release" "prometheus" {
   }
 
   set {
+    name  = "grafana.sidecar.dashboards.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "grafana.sidecar.dashboards.searchNamespace"
+    value = "ALL"
+  }
+
+  set {
     name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
     value = "false"
   }
