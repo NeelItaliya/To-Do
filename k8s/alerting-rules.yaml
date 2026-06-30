@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: to-do-alerts
+  namespace: monitoring
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: to-do.rules
+      interval: 30s
+      rules:
+        - alert: TodoAppHighErrorRate
+          expr: >
+            sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: critical
+            namespace: to-do
+          annotations:
+            summary: "High error rate on To-Do app"
+            description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes (threshold: 5%)"
+
+        - alert: TodoAppHighLatency
+          expr: >
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+            ) > 1
+          for: 5m
+          labels:
+            severity: warning
+            namespace: to-do
+          annotations:
+            summary: "High P95 latency on To-Do app"
+            description: "P95 latency is {{ $value }}s over the last 5 minutes (threshold: 1s)"
+
+        - alert: TodoAppPodNotReady
+          expr: kube_pod_status_ready{namespace="to-do", condition="true"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            namespace: to-do
+          annotations:
+            summary: "To-Do app pod not ready"
+            description: "Pod {{ $labels.pod }} in namespace to-do has been not ready for 2 minutes"
+
+        - alert: TodoAppDown
+          expr: absent(up{job="to-do-monitor"}) or sum(up{job="to-do-monitor"}) == 0
+          for: 1m
+          labels:
+            severity: critical
+            namespace: to-do
+          annotations:
+            summary: "To-Do app is down"
+            description: "No To-Do app pods are running or reachable by Prometheus"

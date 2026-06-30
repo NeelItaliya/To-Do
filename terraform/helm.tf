@@ -83,6 +83,41 @@ resource "helm_release" "prometheus" {
     value = "false"
   }
 
+  values = [<<-EOT
+    alertmanager:
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          group_by: ['alertname', 'namespace']
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 12h
+          receiver: 'null'
+          routes:
+            - matchers:
+                - alertname =~ "InfoInhibitor|Watchdog"
+              receiver: 'null'
+            - matchers:
+                - namespace = "to-do"
+              receiver: 'slack'
+        receivers:
+          - name: 'null'
+          - name: 'slack'
+            slack_configs:
+              - api_url: '${var.slack_webhook_url}'
+                channel: '#alerts'
+                send_resolved: true
+                title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+                text: |-
+                  {{ range .Alerts }}
+                  *Alert:* {{ .Annotations.summary }}
+                  *Description:* {{ .Annotations.description }}
+                  *Severity:* {{ .Labels.severity }}
+                  {{ end }}
+  EOT
+  ]
+
   depends_on = [aws_eks_node_group.main]
 }
 

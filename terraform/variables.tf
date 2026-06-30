@@ -51,3 +51,10 @@ variable "jwt_secret" {
   default     = "change-me-in-production"
   sensitive   = true
 }
+
+variable "slack_webhook_url" {
+  description = "Slack incoming webhook URL for AlertManager notifications"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
