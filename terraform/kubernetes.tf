@@ -23,6 +23,7 @@ resource "kubernetes_config_map" "app" {
     AWS_REGION  = var.aws_region
     USERS_TABLE = var.users_table_name
     TODOS_TABLE = var.todos_table_name
+    ENVIRONMENT = var.environment
   }
 }
 
@@ -60,7 +61,7 @@ resource "kubernetes_deployment" "app" {
   }
 
   spec {
-    replicas = 2
+    replicas = var.node_desired_count
 
     selector {
       match_labels = {

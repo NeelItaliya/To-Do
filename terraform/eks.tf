@@ -16,8 +16,9 @@ resource "aws_eks_cluster" "main" {
   ]
 
   tags = {
-    Name    = var.project_name
-    Project = var.project_name
+    Name        = var.project_name
+    Project     = var.project_name
+    Environment = var.environment
   }
 }
 
@@ -31,8 +32,8 @@ resource "aws_eks_node_group" "main" {
 
   scaling_config {
     desired_size = var.node_desired_count
-    min_size     = 1
-    max_size     = 3
+    min_size     = var.node_min_count
+    max_size     = var.node_desired_count + 2
   }
 
   update_config {
@@ -46,8 +47,9 @@ resource "aws_eks_node_group" "main" {
   ]
 
   tags = {
-    Name    = "${var.project_name}-nodes"
-    Project = var.project_name
+    Name        = "${var.project_name}-nodes"
+    Project     = var.project_name
+    Environment = var.environment
   }
 }
 

@@ -4,6 +4,17 @@ variable "aws_region" {
   default     = "ap-south-1"
 }
 
+variable "environment" {
+  description = "Deployment environment (dev, staging, prod)"
+  type        = string
+  default     = "prod"
+
+  validation {
+    condition     = contains(["dev", "staging", "prod"], var.environment)
+    error_message = "environment must be one of: dev, staging, prod"
+  }
+}
+
 variable "project_name" {
   description = "Name prefix applied to every resource"
   type        = string
@@ -31,6 +42,12 @@ variable "node_desired_count" {
   description = "Desired number of EKS worker nodes"
   type        = number
   default     = 2
+}
+
+variable "node_min_count" {
+  description = "Minimum number of EKS worker nodes"
+  type        = number
+  default     = 1
 }
 
 variable "users_table_name" {
