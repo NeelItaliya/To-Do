@@ -202,4 +202,8 @@ resource "kubernetes_ingress_v1" "app" {
   }
 
   depends_on = [helm_release.lbc]
+
+  timeouts {
+    delete = "5m"
+  }
 }
