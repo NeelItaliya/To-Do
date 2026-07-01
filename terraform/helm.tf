@@ -1,3 +1,15 @@
+# CloudWatch Log Group for EKS container logs
+resource "aws_cloudwatch_log_group" "eks" {
+  name              = "/aws/eks/${var.project_name}/containers"
+  retention_in_days = 7
+
+  tags = {
+    Name        = "${var.project_name}-logs"
+    Project     = var.project_name
+    Environment = var.environment
+  }
+}
+
 # LBC Service Account (must exist before helm installs LBC)
 resource "kubernetes_service_account" "lbc" {
   metadata {
@@ -119,5 +131,41 @@ resource "helm_release" "prometheus" {
   ]
 
   depends_on = [aws_eks_node_group.main]
+}
+
+# Fluent Bit — ships container logs to CloudWatch
+resource "helm_release" "fluent_bit" {
+  name             = "fluent-bit"
+  repository       = "https://fluent.github.io/helm-charts"
+  chart            = "fluent-bit"
+  namespace        = "logging"
+  create_namespace = true
+  version          = "0.47.9"
+
+  values = [<<-EOT
+    config:
+      filters: |
+        [FILTER]
+            Name                kubernetes
+            Match               kube.*
+            Kube_URL            https://kubernetes.default.svc:443
+            Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            Kube_Token_File     /var/run/secrets/kubernetes.io/serviceaccount/token
+            Merge_Log           On
+            Keep_Log            Off
+            K8S-Logging.Parser  On
+            K8S-Logging.Exclude On
+      outputs: |
+        [OUTPUT]
+            Name              cloudwatch_logs
+            Match             kube.*
+            region            ${var.aws_region}
+            log_group_name    /aws/eks/${var.project_name}/containers
+            log_stream_prefix fluent-bit-
+            auto_create_group false
+  EOT
+  ]
+
+  depends_on = [aws_eks_node_group.main, aws_cloudwatch_log_group.eks]
 }
 
