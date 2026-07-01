@@ -42,3 +42,8 @@ output "alb_dns" {
   description = "ALB DNS — open this in your browser (takes ~2 min to provision)"
   value       = try(kubernetes_ingress_v1.app.status[0].load_balancer[0].ingress[0].hostname, "provisioning...")
 }
+
+output "cloudwatch_log_group" {
+  description = "CloudWatch Log Group for container logs"
+  value       = aws_cloudwatch_log_group.eks.name
+}
