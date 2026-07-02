@@ -18,25 +18,24 @@ resource "kubernetes_config_map" "app" {
   }
 
   data = {
-    NODE_ENV    = "production"
-    PORT        = tostring(var.app_port)
-    AWS_REGION  = var.aws_region
-    USERS_TABLE = var.users_table_name
-    TODOS_TABLE = var.todos_table_name
-    ENVIRONMENT = var.environment
+    NODE_ENV         = "production"
+    PORT             = tostring(var.app_port)
+    AWS_REGION       = var.aws_region
+    USERS_TABLE      = var.users_table_name
+    TODOS_TABLE      = var.todos_table_name
+    ENVIRONMENT      = var.environment
+    JWT_SECRET_NAME  = aws_secretsmanager_secret.jwt_secret.name
   }
 }
 
-# Secret
+# Secret (placeholder — JWT_SECRET is fetched from Secrets Manager at runtime)
 resource "kubernetes_secret" "app" {
   metadata {
     name      = "${var.project_name}-secret"
     namespace = kubernetes_namespace.app.metadata[0].name
   }
 
-  data = {
-    JWT_SECRET = var.jwt_secret
-  }
+  data = {}
 }
 
 # App Service Account (IRSA for DynamoDB)
@@ -90,16 +89,6 @@ resource "kubernetes_deployment" "app" {
           env_from {
             config_map_ref {
               name = kubernetes_config_map.app.metadata[0].name
-            }
-          }
-
-          env {
-            name = "JWT_SECRET"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret.app.metadata[0].name
-                key  = "JWT_SECRET"
-              }
             }
           }
 
