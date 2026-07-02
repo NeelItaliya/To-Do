@@ -1,50 +1,105 @@
-# Automated CI/CD Pipeline for a Web Application
+# To-Do App
 
-A complete DevOps project that automatically builds, tests, containerizes, and deploys a sample **To-Do REST API** whenever code is pushed.
-
-> **Phase 1 (complete):** Continuous Integration & Containerization
-> **Phase 2 (in progress):** Continuous Deployment to AWS EKS, Terraform IaC, Prometheus/Grafana monitoring.
+A production-grade task management application built with Node.js and Express, deployed on AWS EKS with full observability, security scanning, secrets management, and multi-environment support.
 
 ## Tech Stack
 
-| Area | Tool |
-|------|------|
+| Layer | Technology |
+|-------|-----------|
 | Application | Node.js + Express |
-| Auth | JWT (JSON Web Tokens) + bcrypt |
+| Auth | JWT + bcrypt |
 | Database | AWS DynamoDB |
-| Testing | Jest (unit) + supertest (API) |
-| Code quality | ESLint |
-| Containerization | Docker (multi-stage) + Docker Compose |
+| Container | Docker (multi-stage, linux/amd64) |
+| Orchestration | Kubernetes on AWS EKS 1.35 |
+| Infrastructure | Terraform |
+| Ingress | AWS Load Balancer Controller |
+| Monitoring | Prometheus + Grafana + AlertManager |
+| Logging | Fluent Bit → AWS CloudWatch |
+| Secrets | AWS Secrets Manager + IRSA |
+| Security Scanning | Trivy (CRITICAL/HIGH) |
 | CI | GitHub Actions |
-| Registry | Docker Hub |
-| Cloud | AWS EKS + Terraform |
-| Monitoring (Phase 2) | Prometheus + Grafana |
+| CD | GitHub Actions (rolling deploy + health validation) |
 
-## The Application
+## Architecture
 
-A To-Do REST API with JWT authentication, backed by **AWS DynamoDB** for persistent storage. A web UI is served at `/` in the same Express container.
+```
+Developer Push
+      │
+      ▼
+GitHub Actions CI
+  ├── Lint & Test (ESLint + Jest + coverage)
+  ├── Build & Push Docker Image (linux/amd64 → Docker Hub)
+  └── Security Scan (Trivy — CRITICAL/HIGH vulnerabilities)
+      │
+      ▼ (on merge to main)
+GitHub Actions CD
+  ├── Configure AWS credentials
+  ├── kubectl set image (rolling update)
+  └── Validate deployment (replica health + ALB health check)
+```
 
-Open <http://localhost:3000> after starting the app to use the UI.
+```
+Internet ──▶ ALB (AWS Load Balancer Controller)
+                    │
+             EKS Node Group (public subnets, t3.small)
+                    │
+             ┌──────┴──────────────────────────────┐
+             │  to-do namespace                    │
+             │  ├── App pods (2 replicas)           │
+             │  └── ConfigMap / ServiceAccount      │
+             │                                     │
+             │  monitoring namespace               │
+             │  ├── Prometheus                     │
+             │  ├── Grafana                        │
+             │  ├── AlertManager                   │
+             │  └── Fluent Bit (DaemonSet)         │
+             └─────────────────────────────────────┘
+                    │
+             AWS Services
+             ├── DynamoDB (users + todos tables)
+             ├── Secrets Manager (jwt-secret via IRSA)
+             └── CloudWatch (/aws/eks/to-do/containers)
+```
 
-### Auth API
+## Project Structure
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST   | `/api/auth/register` | Register `{ "username": "...", "password": "..." }` |
-| POST   | `/api/auth/login`    | Login — returns `{ "token": "..." }` |
-
-All todo routes require `Authorization: Bearer <token>` header.
-
-### Todos API
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET    | `/health`        | Health/readiness probe |
-| GET    | `/api/todos`     | List all todos for the authenticated user |
-| GET    | `/api/todos/:id` | Get one todo |
-| POST   | `/api/todos`     | Create a todo `{ "title": "...", "priority"?: "low\|medium\|high", "deadline": "ISO date" }` |
-| PUT    | `/api/todos/:id` | Update `{ "title"?, "completed"?, "priority"? }` |
-| DELETE | `/api/todos/:id` | Delete a todo |
+```
+.
+├── src/
+│   ├── app.js              # Express app factory (DI for testability)
+│   ├── server.js           # Port binding + JWT secret fetch from Secrets Manager
+│   ├── todoStore.js        # DynamoDB-backed todo store
+│   └── userStore.js        # DynamoDB-backed user store (bcrypt)
+├── public/                 # Static web UI
+├── tests/
+│   ├── todoStore.test.js   # Unit tests (mock DynamoDB client)
+│   └── api.test.js         # Integration tests (injected mock stores)
+├── terraform/
+│   ├── eks.tf              # EKS cluster + node group (public subnets)
+│   ├── iam.tf              # IRSA roles for app + LBC
+│   ├── vpc.tf              # VPC, subnets, IGW, routes
+│   ├── dynamodb.tf         # DynamoDB tables (PAY_PER_REQUEST)
+│   ├── secrets.tf          # AWS Secrets Manager (jwt-secret)
+│   ├── helm.tf             # kube-prometheus-stack + Fluent Bit via Helm
+│   ├── kubernetes.tf       # K8s namespace, deployment, service, ingress
+│   └── envs/               # Per-environment tfvars
+│       ├── dev.tfvars      # 1 node, t3.small, 1 replica
+│       ├── staging.tfvars  # 2 nodes, t3.small, 2 replicas
+│       └── prod.tfvars     # 3 nodes, t3.medium, 3 replicas
+├── k8s/
+│   ├── service-monitor.yaml    # ServiceMonitor for Prometheus scraping
+│   ├── grafana-dashboard.yaml  # To-Do App Grafana dashboard
+│   └── alerting-rules.yaml     # 4 custom PrometheusRules
+├── .github/workflows/
+│   ├── ci.yml              # Lint + Test + Build + Trivy scan
+│   └── cd.yml              # Rolling deploy + health validation
+├── scripts/
+│   └── validate-deploy.sh  # Checks replica health + ALB endpoint
+└── docs/
+    ├── architecture.md
+    ├── production-deployment-guide.md
+    └── monitoring-guide.md
+```
 
 ## Run Locally
 
@@ -52,66 +107,100 @@ Requires AWS credentials with DynamoDB access (`~/.aws/credentials`).
 
 ```bash
 npm install
-npm start            # http://localhost:3000
-npm test             # run unit + API tests
+npm run dev          # http://localhost:3000 (auto-restart on change)
+npm test             # Jest unit + API tests
 npm run test:coverage
 npm run lint
 ```
 
-## Run with Docker
+## API Reference
+
+### Auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/register` | `{ "username": "...", "password": "..." }` |
+| POST | `/api/auth/login` | Returns `{ "token": "..." }` |
+
+All `/api/todos` routes require `Authorization: Bearer <token>`.
+
+### Todos
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/todos` | List all todos |
+| GET | `/api/todos/:id` | Get single todo |
+| POST | `/api/todos` | Create `{ "title", "deadline", "priority"? }` |
+| PUT | `/api/todos/:id` | Update `{ "title"?, "completed"?, "priority"? }` |
+| DELETE | `/api/todos/:id` | Delete todo |
+| GET | `/health` | Liveness/readiness probe |
+| GET | `/metrics` | Prometheus metrics endpoint |
+
+## Infrastructure Deployment
+
+See [Production Deployment Guide](docs/production-deployment-guide.md) for full setup.
 
 ```bash
-# Build + run via compose
-docker compose up --build
+cd terraform
+# Step 1: Bootstrap EKS (Helm/K8s providers need the cluster first)
+terraform apply -target=aws_eks_cluster.main \
+                -target=aws_eks_node_group.main \
+                -target=aws_iam_openid_connect_provider.eks
 
-# Or build/run the image directly
-docker build -t to-do:local .
-docker run -p 3000:3000 \
-  -e AWS_REGION=ap-south-1 \
-  -e USERS_TABLE=to-do-users \
-  -e TODOS_TABLE=to-do-todos \
-  -e JWT_SECRET=your-secret \
-  to-do:local
+# Step 2: Full apply (LBC + Prometheus + App + Secrets)
+terraform apply
 
-# Smoke test
-curl localhost:3000/health
-curl -X POST localhost:3000/api/auth/register \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"alice","password":"pass123"}'
+# Step 3: Apply manual K8s resources
+kubectl apply -f k8s/service-monitor.yaml
+kubectl apply -f k8s/grafana-dashboard.yaml
+kubectl apply -f k8s/alerting-rules.yaml
 ```
 
-## CI Pipeline
+## Multi-Environment
 
-On every push/PR to `main` or `develop`, GitHub Actions runs:
+```bash
+terraform workspace new dev
+terraform apply -var-file=envs/dev.tfvars      # 1 node, t3.small
 
-1. **Lint & Test** — `npm ci` → ESLint → Jest with coverage (artifact uploaded).
-2. **Build & Push** — on push only: builds the multi-stage Docker image (`linux/amd64`) and pushes to Docker Hub with versioned tags (`latest`, branch name, short commit SHA).
+terraform workspace new staging
+terraform apply -var-file=envs/staging.tfvars  # 2 nodes, t3.small
 
-See [`docs/ci-pipeline.md`](docs/ci-pipeline.md) for details and required secrets.
-
-## Repository Layout
-
+terraform workspace select prod
+terraform apply -var-file=envs/prod.tfvars     # 3 nodes, t3.medium
 ```
-.
-├── src/                  # Express app (app.js, server.js, todoStore.js, userStore.js)
-├── public/               # Single-page web UI (served at /)
-├── tests/                # Jest unit + supertest API tests
-├── .github/workflows/    # GitHub Actions CI pipeline
-├── docs/                 # Branching strategy + CI pipeline docs
-├── terraform/            # AWS infrastructure (VPC, EKS, DynamoDB, IAM)
-├── k8s/                  # Kubernetes manifests (Deployment, Service, Ingress)
-├── Dockerfile            # Multi-stage build (deps → runtime, non-root user)
-├── docker-compose.yml
-└── package.json
-```
+
+## Monitoring Access
+
+| Tool | Command | URL |
+|------|---------|-----|
+| Grafana | `kubectl port-forward svc/prometheus-grafana 3001:80 -n monitoring` | http://localhost:3001 (admin/admin) |
+| Prometheus | `kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring` | http://localhost:9090 |
+| AlertManager | `kubectl port-forward svc/prometheus-kube-prometheus-alertmanager 9093:9093 -n monitoring` | http://localhost:9093 |
+| CloudWatch | AWS Console | `/aws/eks/to-do/containers` log group |
+
+See [Monitoring Guide](docs/monitoring-guide.md) for dashboards, alerts, and queries.
+
+## CI/CD
+
+- **CI** triggers on every push/PR to `main` or `develop`
+- **CD** triggers automatically after CI passes on `main` — zero-downtime rolling update
+
+## Phase 2 Progress
+
+| Day | Feature | Status |
+|-----|---------|--------|
+| 1 | EKS + Kubernetes manifests + AWS Load Balancer Controller | ✅ Done |
+| 2 | CD Pipeline + Deployment Validation Script | ✅ Done |
+| 3 | Prometheus monitoring + ServiceMonitor | ✅ Done |
+| 4 | Grafana dashboards (To-Do App dashboard) | ✅ Done |
+| 5 | Alerting (AlertManager + 4 PrometheusRules) | ✅ Done |
+| 6 | Multi-environment (Terraform workspaces + per-env tfvars) | ✅ Done |
+| 7 | Secrets management (AWS Secrets Manager + IRSA) | ✅ Done |
+| 8 | Security scanning (Trivy in CI pipeline) | ✅ Done |
+| 9 | Production Deployment Guide + Architecture Docs | ✅ Done |
 
 ## Documentation
 
-- [Branching Strategy](docs/branching-strategy.md)
-- [CI Pipeline Guide](docs/ci-pipeline.md)
-
-## Project Status
-
-- [x] **Phase 1:** Git workflow, app, JWT auth, DynamoDB, tests, ESLint, Docker, Docker Compose, GitHub Actions CI, Docker Hub push
-- [x] **Phase 2 (Day 1):** Terraform EKS cluster, IRSA, Kubernetes manifests (Deployment, Service, Ingress via AWS LBC)
-- [ ] **Phase 2 (remaining):** CD pipeline, multi-env, Prometheus/Grafana, alerting, secrets management, security scanning
+- [Architecture Overview](docs/architecture.md)
+- [Production Deployment Guide](docs/production-deployment-guide.md)
+- [Monitoring Guide](docs/monitoring-guide.md)
