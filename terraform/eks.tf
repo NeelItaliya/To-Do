@@ -27,7 +27,7 @@ resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.project_name}-nodes"
   node_role_arn   = aws_iam_role.eks_node.arn
-  subnet_ids      = aws_subnet.private[*].id
+  subnet_ids      = aws_subnet.public[*].id
   instance_types  = [var.node_instance_type]
 
   scaling_config {
@@ -44,6 +44,9 @@ resource "aws_eks_node_group" "main" {
     aws_iam_role_policy_attachment.eks_node_policy,
     aws_iam_role_policy_attachment.eks_cni_policy,
     aws_iam_role_policy_attachment.eks_ecr_policy,
+    aws_iam_role_policy_attachment.eks_cloudwatch_policy,
+    aws_internet_gateway.main,
+    aws_route_table_association.public,
   ]
 
   tags = {

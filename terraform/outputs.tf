@@ -47,3 +47,8 @@ output "cloudwatch_log_group" {
   description = "CloudWatch Log Group for container logs"
   value       = aws_cloudwatch_log_group.eks.name
 }
+
+output "jwt_secret_arn" {
+  description = "AWS Secrets Manager ARN for JWT secret"
+  value       = aws_secretsmanager_secret.jwt_secret.arn
+}
