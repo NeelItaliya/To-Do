@@ -2,7 +2,7 @@
 
 ## Overview
 
-The To-Do app uses **kube-prometheus-stack** (Prometheus + Grafana + AlertManager) deployed via Helm into the `monitoring` namespace, with **Fluent Bit** shipping container logs to AWS CloudWatch.
+The To-Do app uses **kube-prometheus-stack** (Prometheus + Grafana) deployed via Helm into the `monitoring` namespace, with **Fluent Bit** shipping container logs to AWS CloudWatch.
 
 ---
 
@@ -30,16 +30,6 @@ Open: http://localhost:9090
 - **Alerts tab** — view all active/pending/inactive alerts
 - **Graph tab** — run PromQL queries
 - **Status → Targets** — check scrape health
-
-### AlertManager
-
-```bash
-kubectl port-forward svc/prometheus-kube-prometheus-alertmanager 9093:9093 -n monitoring
-```
-
-Open: http://localhost:9093
-
-Shows currently firing alerts and their routing to Slack.
 
 ### CloudWatch Logs
 
@@ -109,7 +99,7 @@ kubectl apply -f k8s/alerting-rules.yaml
 #### TodoAppDown
 - **Severity:** critical
 - **Condition:** Prometheus cannot scrape any To-Do app targets
-- **Expression:** `absent(up{job="to-do-monitor"}) or sum(up{job="to-do-monitor"}) == 0`
+- **Expression:** `absent(up{job="to-do-svc"}) or sum(up{job="to-do-monitor"}) == 0`
 - **For:** 1m
 - **Meaning:** Fires when Prometheus has no scrape targets for the app (ServiceMonitor not applied, or all pods unreachable)
 
@@ -119,17 +109,17 @@ kubectl apply -f k8s/alerting-rules.yaml
 
 The `ServiceMonitor` (`k8s/service-monitor.yaml`) tells Prometheus how to scrape the app's `/metrics` endpoint.
 
-**Must be applied manually after every fresh cluster:**
+`terraform apply` applies it automatically (`terraform/monitoring.tf`). To re-apply by hand:
 ```bash
 kubectl apply -f k8s/service-monitor.yaml
 ```
 
-This creates a scrape job named `to-do-monitor` targeting port 3000 on pods labeled `app: to-do` in the `to-do` namespace.
+Prometheus then scrapes port 3000 on pods labeled `app: to-do` in the `to-do` namespace. The scrape job is named after the Service: `to-do-svc`.
 
 **Verify scraping is working:**
 ```bash
 # In Prometheus UI → Status → Targets
-# Look for: to-do/to-do-monitor (should show UP)
+# Look for: serviceMonitor/monitoring/to-do-monitor (job to-do-svc, should show UP)
 ```
 
 ---
@@ -158,31 +148,13 @@ sum by (status_code) (rate(http_requests_total[5m]))
 
 ---
 
-## AlertManager Configuration
+## Alerts
 
-AlertManager is configured in `terraform/helm.tf` via the `kube-prometheus-stack` Helm values.
+Alertmanager is not deployed, so alerts are not sent anywhere (no email, no chat).
+The four rules in `k8s/alerting-rules.yaml` are evaluated by Prometheus itself.
 
-Alerts route to **Slack** via a webhook URL:
-- All `to-do` namespace alerts route to the `to-do-alerts` receiver
-- Alerts repeat every 4 hours if still firing
-- Group wait: 30 seconds, group interval: 5 minutes
-
-**Configuration location:**
-```hcl
-# terraform/helm.tf — alertmanager.config section
-alertmanager:
-  config:
-    route:
-      receiver: 'to-do-alerts'
-      routes:
-        - match:
-            namespace: to-do
-          receiver: to-do-alerts
-    receivers:
-      - name: to-do-alerts
-        slack_configs:
-          - api_url: <slack_webhook_url>
-```
+To see their state, open the Prometheus UI and go to **Alerts**. Each rule is
+`inactive`, `pending` (condition true, waiting out its `for:` period) or `firing`.
 
 ---
 
@@ -208,7 +180,6 @@ kubectl logs -n monitoring -l app.kubernetes.io/name=fluent-bit --tail=20
 | Issue | Fix |
 |-------|-----|
 | Grafana dashboard not found | `kubectl apply -f k8s/grafana-dashboard.yaml` |
-| AlertManager alerts not routing | Check Slack webhook URL in `terraform/helm.tf` and re-apply |
 | `TodoAppDown` firing | `kubectl apply -f k8s/service-monitor.yaml` to create the scrape job |
 | Prometheus shows no targets | Verify ServiceMonitor is applied and pods are running |
 | CloudWatch logs not appearing | Check Fluent Bit pods: `kubectl logs -n monitoring -l app.kubernetes.io/name=fluent-bit` |

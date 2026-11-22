@@ -44,7 +44,6 @@ GitHub Actions CD
                           │   │  │  ┌────────────────┐  │   │  │
                           │   │  │  │  Prometheus     │  │   │  │
                           │   │  │  │  Grafana        │  │   │  │
-                          │   │  │  │  AlertManager   │  │   │  │
                           │   │  │  │  Fluent Bit     │  │   │  │
                           │   │  │  └────────────────┘  │   │  │
                           │   │  └─────────────────────┘   │  │

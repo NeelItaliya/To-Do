@@ -85,7 +85,7 @@ terraform apply
 This provisions:
 - EKS cluster (Kubernetes 1.35) with node group in public subnets
 - AWS Load Balancer Controller via Helm
-- kube-prometheus-stack (Prometheus + Grafana + AlertManager) via Helm
+- kube-prometheus-stack (Prometheus + Grafana) via Helm
 - Fluent Bit log shipping to CloudWatch via Helm
 - App namespace, ConfigMap, Secret, ServiceAccount, Deployment, Service, Ingress
 - JWT secret in AWS Secrets Manager
@@ -194,11 +194,10 @@ kubectl port-forward svc/prometheus-grafana 3001:80 -n monitoring
 # Dashboard: Dashboards → To-Do App
 ```
 
-### AlertManager
-```bash
-kubectl port-forward svc/prometheus-kube-prometheus-alertmanager 9093:9093 -n monitoring
-# Open: http://localhost:9093
-```
+### Alerts
+Alertmanager is not deployed. The alert rules run inside Prometheus:
+open the Prometheus UI (above) and go to **Alerts** to see which are
+inactive, pending or firing.
 
 ### CloudWatch Logs
 AWS Console → CloudWatch → Log Groups → `/aws/eks/to-do/containers`
