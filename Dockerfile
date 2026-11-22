@@ -13,6 +13,13 @@ ENV PORT=3000
 # Run as a non-root user for security
 RUN addgroup -S app && adduser -S app -G app
 
+# The app only needs `node` at runtime. npm, npx, corepack and yarn ship with
+# the base image and carry their own dependencies, which add attack surface
+# and show up in vulnerability scans, so they are removed here.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+      /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+      /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v*
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY package*.json ./
 COPY src ./src

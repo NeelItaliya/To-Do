@@ -69,7 +69,7 @@ data:
           "gridPos": { "x": 18, "y": 8, "w": 6, "h": 8 },
           "targets": [
             {
-              "expr": "count(up{job=\"to-do-monitor\"})",
+              "expr": "count(up{job=\"to-do-svc\"} == 1)",
               "legendFormat": "Pods"
             }
           ]

@@ -13,11 +13,16 @@
 
 | Secret | Description |
 |--------|-------------|
-| `AWS_ACCESS_KEY_ID` | AWS IAM access key |
-| `AWS_SECRET_ACCESS_KEY` | AWS IAM secret key |
-| `EKS_CLUSTER_NAME` | EKS cluster name (`to-do`) |
 | `DOCKERHUB_USERNAME` | Docker Hub username |
 | `DOCKERHUB_TOKEN` | Docker Hub access token |
+
+The CD pipeline signs in to AWS through GitHub's OIDC provider and assumes the
+`to-do-github-deploy` role that Terraform creates (`terraform/github-oidc.tf`),
+so it needs no AWS keys.
+
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are optional. If they are
+present, the pipeline uses them only as a fallback when the role cannot be
+assumed. Delete both secrets once a deploy has succeeded through the role.
 
 ## Initial Infrastructure Setup
 
@@ -37,16 +42,29 @@ jwt_secret = "your-strong-secret-here"
 EOF
 ```
 
-### Step 3 — Import existing DynamoDB tables (if they exist)
+### Step 3 — Make sure the DynamoDB tables exist
+
+Terraform does not own the tables. It only looks them up
+(`terraform/dynamodb.tf`), so it can never delete them and there is nothing to
+import. They must exist before the first apply:
 
 ```bash
-cd terraform
+aws dynamodb list-tables --region ap-south-1
+# expected: to-do-todos, to-do-users
+```
 
-# Temporarily comment out Helm/Kubernetes provider blocks in versions.tf
-# Then run:
-terraform import aws_dynamodb_table.users to-do-users
-terraform import aws_dynamodb_table.todos to-do-todos
-# Restore provider blocks in versions.tf
+In a new AWS account, create them once:
+
+```bash
+aws dynamodb create-table --region ap-south-1 --table-name to-do-users \
+  --attribute-definitions AttributeName=username,AttributeType=S \
+  --key-schema AttributeName=username,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST
+
+aws dynamodb create-table --region ap-south-1 --table-name to-do-todos \
+  --attribute-definitions AttributeName=userId,AttributeType=S AttributeName=todoId,AttributeType=S \
+  --key-schema AttributeName=userId,KeyType=HASH AttributeName=todoId,KeyType=RANGE \
+  --billing-mode PAY_PER_REQUEST
 ```
 
 ### Step 4 — Bootstrap EKS cluster
@@ -72,6 +90,8 @@ This provisions:
 - App namespace, ConfigMap, Secret, ServiceAccount, Deployment, Service, Ingress
 - JWT secret in AWS Secrets Manager
 - CloudWatch Log Group `/aws/eks/to-do/containers`
+- GitHub OIDC provider and the `to-do-github-deploy` role used by the CD pipeline
+- App monitoring: ServiceMonitor, the "To-Do App" Grafana dashboard, alert rules
 
 ### Step 6 — Configure kubectl
 
@@ -79,7 +99,11 @@ This provisions:
 aws eks update-kubeconfig --region ap-south-1 --name to-do
 ```
 
-### Step 7 — Apply manual K8s resources
+### Step 7 — Monitoring resources (applied automatically)
+
+`terraform apply` applies the ServiceMonitor, the Grafana dashboard and the
+alert rules for you (`terraform/monitoring.tf`), right after the Prometheus
+chart is installed. To re-apply them by hand:
 
 ```bash
 kubectl apply -f k8s/service-monitor.yaml
@@ -122,15 +146,35 @@ terraform apply -var-file=envs/prod.tfvars
 ### CI Pipeline (`.github/workflows/ci.yml`)
 Triggers on push/PR to `main` or `develop`:
 1. **Lint & Test** — ESLint + Jest with coverage
-2. **Build & Push** — Docker image built for `linux/amd64`, pushed to Docker Hub
-3. **Security Scan** — Trivy scans image for CRITICAL/HIGH vulnerabilities
+2. **Build** — Docker image built for `linux/amd64`
+3. **Security Scan** — Trivy scans the built image. A CRITICAL vulnerability
+   that has a fix fails the job, so the image is never pushed. HIGH and
+   CRITICAL findings are saved as the `trivy-security-report` artifact.
+4. **Push** — the image goes to Docker Hub tagged with the short commit SHA,
+   the branch name, and `latest` (on `main`)
+
+Steps 2–4 run on pushes only; pull requests stop after the tests.
 
 ### CD Pipeline (`.github/workflows/cd.yml`)
-Triggers automatically after CI passes on `main`:
-1. Configures AWS credentials
-2. Updates kubeconfig
-3. Rolls out new image: `kubectl set image`
-4. Runs `scripts/validate-deploy.sh` — checks replica health + ALB health endpoint
+Triggers automatically after CI passes on a push to `main`:
+1. Signs in to AWS by assuming the `to-do-github-deploy` role (OIDC)
+2. Checks that the EKS cluster is running. If it is not, the job ends
+   successfully with a "Deploy skipped" notice
+3. Rolls out the image for that commit: `kubectl set image ... :<short-sha>`
+4. Runs `scripts/validate-deploy.sh` — all replicas updated and ready, the
+   expected image is running, and `/health` answers through the ALB
+5. If the rollout or the validation fails, runs `kubectl rollout undo` and
+   ends red
+
+Terraform creates the Deployment with `app_image` (`latest`) and then ignores
+the image field, so `terraform apply` does not undo a pipeline deploy.
+
+To roll back by hand:
+
+```bash
+kubectl rollout history deployment/to-do -n to-do
+kubectl rollout undo deployment/to-do -n to-do
+```
 
 ---
 
@@ -163,7 +207,7 @@ AWS Console → CloudWatch → Log Groups → `/aws/eks/to-do/containers`
 
 ## Destroying Resources
 
-**Always exclude DynamoDB tables from destroy:**
+The DynamoDB tables are not in Terraform's state, so destroy cannot touch them.
 
 ```bash
 cd terraform
@@ -180,9 +224,6 @@ terraform state rm kubernetes_ingress_v1.app
 terraform state rm helm_release.lbc
 terraform state rm helm_release.prometheus
 terraform state rm helm_release.fluent_bit
-
-# Remove DynamoDB (never destroy)
-terraform state rm aws_dynamodb_table.users aws_dynamodb_table.todos
 
 terraform destroy
 ```

@@ -30,12 +30,12 @@ output "lbc_irsa_role_arn" {
 
 output "users_table_name" {
   description = "DynamoDB table for users"
-  value       = aws_dynamodb_table.users.name
+  value       = data.aws_dynamodb_table.users.name
 }
 
 output "todos_table_name" {
   description = "DynamoDB table for todos"
-  value       = aws_dynamodb_table.todos.name
+  value       = data.aws_dynamodb_table.todos.name
 }
 
 output "alb_dns" {
@@ -51,4 +51,9 @@ output "cloudwatch_log_group" {
 output "jwt_secret_arn" {
   description = "AWS Secrets Manager ARN for JWT secret"
   value       = aws_secretsmanager_secret.jwt_secret.arn
+}
+
+output "github_deploy_role_arn" {
+  description = "IAM role the GitHub Actions CD pipeline assumes (must match DEPLOY_ROLE_ARN in .github/workflows/cd.yml)"
+  value       = aws_iam_role.github_deploy.arn
 }

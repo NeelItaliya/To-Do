@@ -1,37 +1,151 @@
 name: CD Pipeline
 
+# Runs after the CI Pipeline finishes on main. It deploys the image CI built
+# for that exact commit, checks it, and rolls back if the check fails.
 on:
   workflow_run:
     workflows: ["CI Pipeline"]
     types: [completed]
     branches: [main]
 
+# One deploy at a time. A newer commit waits for the running deploy to finish.
+concurrency:
+  group: deploy-eks
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # lets the job sign in to AWS through GitHub's OIDC provider
+
+env:
+  AWS_REGION: ap-south-1
+  CLUSTER_NAME: to-do
+  NAMESPACE: to-do
+  DEPLOYMENT: to-do
+  CONTAINER: to-do
+  IMAGE_REPO: neelitaliya/to-do
+  # Created by terraform/github-oidc.tf. It exists only while the infrastructure is up.
+  DEPLOY_ROLE_ARN: arn:aws:iam::835590170330:role/to-do-github-deploy
+  HAS_ACCESS_KEYS: ${{ secrets.AWS_ACCESS_KEY_ID != '' }}
+
 jobs:
   deploy:
     name: Deploy to EKS
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Only for a successful CI run that was started by a push (not a pull request).
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
 
     steps:
-      - name: Checkout code
+      - name: Checkout the deployed commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Configure AWS credentials
+      # CI tags every image with the short commit SHA. Deploying that tag (not
+      # `latest`) means Kubernetes always sees a change and each release maps
+      # to one commit.
+      - name: Work out the image tag
+        id: image
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          echo "ref=${IMAGE_REPO}:${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "Image to deploy: ${IMAGE_REPO}:${HEAD_SHA::7}"
+
+      # Preferred sign-in: short-lived credentials from the deploy role.
+      # This step fails when the role does not exist, which is the normal state
+      # while the infrastructure is destroyed, so it must not fail the job.
+      - name: Sign in to AWS with the deploy role (OIDC)
+        id: oidc
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.DEPLOY_ROLE_ARN }}
+          role-session-name: github-deploy-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Fallback for repositories that still have access keys in their secrets.
+      # Delete the AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY secrets once the
+      # OIDC sign-in has worked, and this step is skipped for good.
+      - name: Sign in to AWS with access keys (fallback)
+        if: steps.oidc.outcome != 'success' && env.HAS_ACCESS_KEYS == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
+
+      # The cluster is destroyed between sessions to save money. With no
+      # cluster there is nothing to deploy to, so the job ends successfully
+      # with a notice instead of failing.
+      - name: Check whether the cluster is running
+        id: cluster
+        run: |
+          skip() {
+            echo "running=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Deploy skipped::$1"
+            echo "### Deploy skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "$1" >> "$GITHUB_STEP_SUMMARY"
+          }
+          if ! aws sts get-caller-identity >/dev/null 2>&1; then
+            skip "No AWS sign-in was possible. The deploy role does not exist, so the infrastructure is not running."
+            exit 0
+          fi
+          status=$(aws eks describe-cluster --name "$CLUSTER_NAME" --query 'cluster.status' --output text 2>/dev/null || true)
+          if [ "$status" != "ACTIVE" ]; then
+            skip "EKS cluster '$CLUSTER_NAME' is not running (status: ${status:-not found}). The image is on Docker Hub and will be used at the next terraform apply."
+            exit 0
+          fi
+          echo "running=true" >> "$GITHUB_OUTPUT"
+          if [ "${{ steps.oidc.outcome }}" != "success" ]; then
+            echo "::warning title=Access-key fallback::The cluster is running but the OIDC deploy role could not be assumed. Deploying with the access-key fallback."
+          fi
 
       - name: Update kubeconfig
-        run: aws eks update-kubeconfig --region ap-south-1 --name ${{ secrets.EKS_CLUSTER_NAME }}
+        if: steps.cluster.outputs.running == 'true'
+        run: aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER_NAME"
 
-      - name: Deploy latest image
+      - name: Deploy the image
+        id: deploy
+        if: steps.cluster.outputs.running == 'true'
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
         run: |
-          kubectl set image deployment/to-do to-do=neelitaliya/to-do:latest -n to-do
-          kubectl rollout status deployment/to-do -n to-do --timeout=120s
+          set -euo pipefail
+          kubectl -n "$NAMESPACE" annotate "deployment/$DEPLOYMENT" \
+            kubernetes.io/change-cause="GitHub Actions run $GITHUB_RUN_ID: $IMAGE" --overwrite
+          kubectl -n "$NAMESPACE" set image "deployment/$DEPLOYMENT" "$CONTAINER=$IMAGE"
+          kubectl -n "$NAMESPACE" rollout status "deployment/$DEPLOYMENT" --timeout=180s
 
-      - name: Validate deployment
+      - name: Validate the deployment
+        id: validate
+        if: steps.cluster.outputs.running == 'true'
+        env:
+          EXPECTED_IMAGE: ${{ steps.image.outputs.ref }}
+        run: bash scripts/validate-deploy.sh
+
+      # If the rollout or the validation failed, put the previous version back.
+      # The job still ends red so the failure is visible.
+      - name: Roll back
+        if: failure() && (steps.deploy.outcome == 'failure' || steps.validate.outcome == 'failure')
         run: |
-          chmod +x scripts/validate-deploy.sh
-          ./scripts/validate-deploy.sh
+          echo "::error title=Deploy failed::Rolling back to the previous version."
+          kubectl -n "$NAMESPACE" rollout undo "deployment/$DEPLOYMENT"
+          kubectl -n "$NAMESPACE" rollout status "deployment/$DEPLOYMENT" --timeout=180s
+          echo "### Deploy failed and was rolled back" >> "$GITHUB_STEP_SUMMARY"
+          echo "Now running: \`$(kubectl -n "$NAMESPACE" get "deployment/$DEPLOYMENT" -o jsonpath='{.spec.template.spec.containers[0].image}')\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Summary
+        if: success() && steps.cluster.outputs.running == 'true'
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: |
+          host=$(kubectl -n "$NAMESPACE" get ingress "${DEPLOYMENT}-ingress" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+          {
+            echo "### Deployed"
+            echo "- Image: \`$IMAGE\`"
+            echo "- Commit: ${{ github.event.workflow_run.head_sha }}"
+            if [ -n "$host" ]; then echo "- URL: http://$host"; fi
+          } >> "$GITHUB_STEP_SUMMARY"

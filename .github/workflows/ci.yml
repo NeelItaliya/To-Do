@@ -11,7 +11,7 @@ env:
   IMAGE_NAME: to-do
 
 jobs:
-  # 1) Lint + unit/API tests + build verification
+  # 1) Lint + unit/API tests
   test:
     name: Lint & Test
     runs-on: ubuntu-latest
@@ -41,9 +41,10 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # 2) Build the Docker image and push to Docker Hub (only on push to main/develop)
+  # 2) Build the image, scan it, and only then push it to Docker Hub.
+  #    Runs on pushes to main/develop (pull requests stop after the tests).
   docker:
-    name: Build & Push Image
+    name: Build, Scan & Push Image
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'push'
@@ -62,6 +63,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # Tags: branch name, short commit SHA, and `latest` on main.
+      # The CD pipeline deploys the short-SHA tag, so every deploy maps to one commit.
       - name: Extract metadata (tags & labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -72,7 +75,54 @@ jobs:
             type=sha,prefix=,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build and push
+      # Build into the runner's local Docker first so the scan sees the exact
+      # image before anything is published.
+      - name: Build image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          platforms: linux/amd64
+          tags: ${{ env.IMAGE_NAME }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Gate: a CRITICAL vulnerability that has a fix stops the pipeline here,
+      # so the image is never pushed or deployed.
+      # Pinned to the commit behind trivy-action v0.36.0.
+      - name: Scan image (fails on fixable CRITICAL vulnerabilities)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: CRITICAL
+
+      # Report: HIGH and CRITICAL findings are saved for review but do not block.
+      - name: Write full scan report (SARIF)
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:scan
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: 0
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          limit-severities-for-sarif: true
+
+      - name: Upload scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-security-report
+          path: trivy-results.sarif
+          retention-days: 30
+          if-no-files-found: ignore
+
+      # Same build as above, served from cache, now published.
+      - name: Push image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -81,41 +131,3 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # 3) Trivy container security scan
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    needs: docker
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/to-do:latest
-          format: table
-          exit-code: 0
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
-
-      - name: Run Trivy and upload SARIF report
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/to-do:latest
-          format: sarif
-          output: trivy-results.sarif
-          ignore-unfixed: true
-          vuln-type: os,library
-          severity: CRITICAL,HIGH
-
-      - name: Upload Trivy scan results
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-security-report
-          path: trivy-results.sarif
-          retention-days: 30

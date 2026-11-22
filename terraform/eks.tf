@@ -11,6 +11,14 @@ resource "aws_eks_cluster" "main" {
     endpoint_private_access = true
   }
 
+  # Access entries let Terraform grant IAM roles access to the cluster
+  # (used for the GitHub Actions deploy role in github-oidc.tf). Whoever runs
+  # `terraform apply` still becomes cluster admin, as before.
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   depends_on = [
     aws_iam_role_policy_attachment.eks_cluster_policy,
   ]
