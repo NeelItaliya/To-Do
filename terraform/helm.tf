@@ -62,6 +62,33 @@ resource "helm_release" "lbc" {
 }
 
 # kube-prometheus-stack (Prometheus + Grafana + AlertManager)
+locals {
+  # var.slack_webhook_url is sensitive; whether it is set is not.
+  slack_enabled = nonsensitive(var.slack_webhook_url != "")
+
+  slack_receiver = {
+    name = "slack"
+    slack_configs = [{
+      api_url       = var.slack_webhook_url
+      channel       = "#alerts"
+      send_resolved = true
+      title         = "[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}"
+      text          = <<-EOT
+        {{ range .Alerts }}
+        *Alert:* {{ .Annotations.summary }}
+        *Description:* {{ .Annotations.description }}
+        *Severity:* {{ .Labels.severity }}
+        {{ end }}
+      EOT
+    }]
+  }
+
+  alertmanager_receivers = concat(
+    [{ name = "null" }],
+    [for receiver in [local.slack_receiver] : receiver if local.slack_enabled],
+  )
+}
+
 resource "helm_release" "prometheus" {
   name             = "prometheus"
   repository       = "https://prometheus-community.github.io/helm-charts"
@@ -95,40 +122,38 @@ resource "helm_release" "prometheus" {
     value = "false"
   }
 
-  values = [<<-EOT
-    alertmanager:
-      config:
-        global:
-          resolve_timeout: 5m
-        route:
-          group_by: ['alertname', 'namespace']
-          group_wait: 30s
-          group_interval: 5m
-          repeat_interval: 12h
-          receiver: 'null'
-          routes:
-            - matchers:
-                - alertname =~ "InfoInhibitor|Watchdog"
-              receiver: 'null'
-            - matchers:
-                - namespace = "to-do"
-              receiver: 'slack'
-        receivers:
-          - name: 'null'
-          - name: 'slack'
-            slack_configs:
-              - api_url: '${var.slack_webhook_url}'
-                channel: '#alerts'
-                send_resolved: true
-                title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
-                text: |-
-                  {{ range .Alerts }}
-                  *Alert:* {{ .Annotations.summary }}
-                  *Description:* {{ .Annotations.description }}
-                  *Severity:* {{ .Labels.severity }}
-                  {{ end }}
-  EOT
-  ]
+  # Alertmanager routing. Built with yamlencode so the Slack receiver can be
+  # left out when no webhook is set: an empty api_url makes the whole config
+  # invalid, and the operator then never starts Alertmanager at all.
+  values = [yamlencode({
+    alertmanager = {
+      config = {
+        global = {
+          resolve_timeout = "5m"
+        }
+        route = {
+          group_by        = ["alertname", "namespace"]
+          group_wait      = "30s"
+          group_interval  = "5m"
+          repeat_interval = "12h"
+          receiver        = "null"
+          routes = [
+            {
+              matchers = ["alertname =~ \"InfoInhibitor|Watchdog\""]
+              receiver = "null"
+            },
+            {
+              # App alerts go to Slack when a webhook is configured. Without
+              # one they are still raised and visible in the Alertmanager UI.
+              matchers = ["namespace = \"to-do\""]
+              receiver = local.slack_enabled ? "slack" : "null"
+            },
+          ]
+        }
+        receivers = local.alertmanager_receivers
+      }
+    }
+  })]
 
   depends_on = [aws_eks_node_group.main]
 }
