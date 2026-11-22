@@ -80,9 +80,11 @@ Internet ──▶ ALB (AWS Load Balancer Controller)
 │   ├── eks.tf              # EKS cluster + node group (public subnets)
 │   ├── iam.tf              # IRSA roles for app + LBC
 │   ├── vpc.tf              # VPC, subnets, IGW, routes
-│   ├── dynamodb.tf         # DynamoDB tables (PAY_PER_REQUEST)
+│   ├── dynamodb.tf         # Lookups of the existing DynamoDB tables
 │   ├── secrets.tf          # AWS Secrets Manager (jwt-secret)
 │   ├── helm.tf             # kube-prometheus-stack + Fluent Bit via Helm
+│   ├── monitoring.tf       # Applies ServiceMonitor, Grafana dashboard, alert rules
+│   ├── github-oidc.tf      # Deploy role GitHub Actions assumes (OIDC)
 │   ├── kubernetes.tf       # K8s namespace, deployment, service, ingress
 │   └── envs/               # Per-environment tfvars
 │       ├── dev.tfvars      # 1 node, t3.small, 1 replica
@@ -93,14 +95,19 @@ Internet ──▶ ALB (AWS Load Balancer Controller)
 │   ├── grafana-dashboard.yaml  # To-Do App Grafana dashboard
 │   └── alerting-rules.yaml     # 4 custom PrometheusRules
 ├── .github/workflows/
-│   ├── ci.yml              # Lint + Test + Build + Trivy scan
-│   └── cd.yml              # Rolling deploy + health validation
+│   ├── ci.yml              # Lint + Test, then Build → Trivy scan → Push
+│   └── cd.yml              # Deploy by commit SHA + validation + rollback
 ├── scripts/
-│   └── validate-deploy.sh  # Checks replica health + ALB endpoint
+│   └── validate-deploy.sh  # Replicas, image, ALB health check, smoke tests
 └── docs/
     ├── architecture.md
+    ├── branching-strategy.md
+    ├── ci-pipeline.md
     ├── production-deployment-guide.md
-    └── monitoring-guide.md
+    ├── monitoring-guide.md
+    ├── troubleshooting-guide.md
+    ├── postman/            # Postman collection for the API
+    └── screenshots/        # Monitoring dashboard screenshots
 ```
 
 ## Run Locally
@@ -149,14 +156,15 @@ terraform apply -target=aws_eks_cluster.main \
                 -target=aws_eks_node_group.main \
                 -target=aws_iam_openid_connect_provider.eks
 
-# Step 2: Full apply (LBC + Prometheus + App + Secrets)
+# Step 2: Full apply (LBC + Prometheus + Grafana dashboard + App + Secrets)
 terraform apply
 
-# Step 3: Apply manual K8s resources
-kubectl apply -f k8s/service-monitor.yaml
-kubectl apply -f k8s/grafana-dashboard.yaml
-kubectl apply -f k8s/alerting-rules.yaml
+# App address (the load balancer needs ~2 minutes)
+terraform output alb_dns
 ```
+
+The two DynamoDB tables are looked up, not created, so `terraform destroy` never
+deletes them.
 
 ## Multi-Environment
 
@@ -183,8 +191,15 @@ See [Monitoring Guide](docs/monitoring-guide.md) for dashboards, alerts, and que
 
 ## CI/CD
 
-- **CI** triggers on every push/PR to `main` or `develop`
-- **CD** triggers automatically after CI passes on `main` — zero-downtime rolling update
+- **CI** triggers on every push/PR to `main` or `develop`: lint and tests, then (on pushes) build the image, scan it with Trivy, and push it tagged with the commit SHA
+- **CD** triggers automatically after CI passes on `main`: signs in to AWS through GitHub OIDC, rolls out that commit's image with zero downtime, runs health and smoke tests, and rolls back if they fail
+
+See the [CI Pipeline Guide](docs/ci-pipeline.md) and the [deployment guide](docs/production-deployment-guide.md#cicd-pipeline).
+
+## API Testing
+
+- **Automated:** `npm test` runs the Jest unit tests and the supertest API tests
+- **Manual:** import `docs/postman/to-do-api.postman_collection.json` into Postman, set `baseUrl`, and run the collection
 
 ## Phase 2 Progress
 
@@ -202,6 +217,9 @@ See [Monitoring Guide](docs/monitoring-guide.md) for dashboards, alerts, and que
 
 ## Documentation
 
-- [Architecture Overview](docs/architecture.md)
+- [Architecture Overview](docs/architecture.md) — CI/CD and infrastructure diagrams
+- [Branching Strategy](docs/branching-strategy.md)
+- [CI Pipeline Guide](docs/ci-pipeline.md)
 - [Production Deployment Guide](docs/production-deployment-guide.md)
 - [Monitoring Guide](docs/monitoring-guide.md)
+- [Troubleshooting Guide](docs/troubleshooting-guide.md)

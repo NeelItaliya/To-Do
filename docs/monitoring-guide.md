@@ -148,6 +148,24 @@ sum by (status_code) (rate(http_requests_total[5m]))
 
 ---
 
+## Dashboard Screenshots
+
+Captured from the live cluster on 22 November 2026.
+
+**Grafana — "To-Do App" dashboard** (request rate, error rate, P95 duration, total requests, active pods)
+
+![Grafana To-Do App dashboard](screenshots/grafana-to-do-dashboard.png)
+
+**Prometheus — scrape targets for the app** (both pods `UP`)
+
+![Prometheus targets](screenshots/prometheus-app-targets.png)
+
+**Prometheus — request rate by route**
+
+![Prometheus request rate](screenshots/prometheus-request-rate.png)
+
+---
+
 ## Alerts
 
 Alertmanager is not deployed, so alerts are not sent anywhere (no email, no chat).

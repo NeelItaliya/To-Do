@@ -7,7 +7,7 @@ and runs on **GitHub Actions**.
 
 | Event | Branches | What runs |
 |-------|----------|-----------|
-| `push` | `main`, `develop` | Lint & Test **+** Build & Push image |
+| `push` | `main`, `develop` | Lint & Test **+** Build, Scan & Push image |
 | `pull_request` | `main`, `develop` | Lint & Test only |
 
 ## Pipeline Stages
@@ -22,10 +22,15 @@ and runs on **GitHub Actions**.
 └─────────┬───────────┘
           │ (needs: test, push only)
           ▼
-┌─────────────────────┐
-│ Job: Build & Push   │  buildx → docker login → metadata
-│                     │  → build multi-stage image → push to Docker Hub
-└─────────────────────┘
+┌──────────────────────────┐
+│ Job: Build, Scan & Push  │  buildx → docker login → metadata
+│                          │  → build multi-stage image
+│                          │  → Trivy scan (stops on a fixable CRITICAL)
+│                          │  → push to Docker Hub
+└──────────────────────────┘
+          │ (push to main only)
+          ▼
+   CD Pipeline (cd.yml) deploys the commit-SHA tag to EKS
 ```
 
 ### Job 1 — Lint & Test
@@ -34,10 +39,14 @@ and runs on **GitHub Actions**.
 - `npm run test:coverage` — Jest unit + supertest API tests with coverage.
 - Coverage uploaded as a build artifact (7-day retention).
 
-### Job 2 — Build & Push (push events only)
+### Job 2 — Build, Scan & Push (push events only)
 - Runs **only after** Job 1 passes (`needs: test`).
 - Logs into Docker Hub using repository secrets.
 - Builds the multi-stage `Dockerfile` with GitHub Actions layer caching.
+- Scans the built image with Trivy **before** it is published. A CRITICAL
+  vulnerability that has a fix fails the job, so the image is never pushed
+  or deployed. HIGH and CRITICAL findings are saved as the
+  `trivy-security-report` artifact.
 - Tags and pushes the image (see tagging strategy below).
 
 ## Image Tagging Strategy
@@ -50,8 +59,9 @@ and runs on **GitHub Actions**.
 | branch name | any push | `user/to-do:develop` |
 | short commit SHA | every push | `user/to-do:a1b2c3d` |
 
-The SHA tag gives an immutable, traceable reference for every build — important
-for rollbacks and for pinning a specific image in Kubernetes (Phase 2).
+The SHA tag gives an immutable, traceable reference for every build. The CD
+pipeline deploys this tag (not `latest`), so every release maps to one commit
+and a rollback returns to a known image.
 
 ## Required GitHub Secrets
 
