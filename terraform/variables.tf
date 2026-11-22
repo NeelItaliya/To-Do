@@ -69,13 +69,6 @@ variable "jwt_secret" {
   sensitive   = true
 }
 
-variable "slack_webhook_url" {
-  description = "Slack incoming webhook URL for AlertManager notifications"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
 variable "github_repository" {
   description = "GitHub repository (owner/name) whose Actions workflows may deploy to the cluster"
   type        = string

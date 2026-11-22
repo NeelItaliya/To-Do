@@ -13,7 +13,7 @@ A production-grade task management application built with Node.js and Express, d
 | Orchestration | Kubernetes on AWS EKS 1.35 |
 | Infrastructure | Terraform |
 | Ingress | AWS Load Balancer Controller |
-| Monitoring | Prometheus + Grafana + AlertManager |
+| Monitoring | Prometheus + Grafana |
 | Logging | Fluent Bit → AWS CloudWatch |
 | Secrets | AWS Secrets Manager + IRSA |
 | Security Scanning | Trivy (CRITICAL/HIGH) |
@@ -54,7 +54,6 @@ Internet ──▶ ALB (AWS Load Balancer Controller)
              │  monitoring namespace               │
              │  ├── Prometheus                     │
              │  ├── Grafana                        │
-             │  ├── AlertManager                   │
              │  └── Fluent Bit (DaemonSet)         │
              └─────────────────────────────────────┘
                     │
@@ -178,7 +177,6 @@ terraform apply -var-file=envs/prod.tfvars     # 3 nodes, t3.medium
 |------|---------|-----|
 | Grafana | `kubectl port-forward svc/prometheus-grafana 3001:80 -n monitoring` | http://localhost:3001 (admin/admin) |
 | Prometheus | `kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring` | http://localhost:9090 |
-| AlertManager | `kubectl port-forward svc/prometheus-kube-prometheus-alertmanager 9093:9093 -n monitoring` | http://localhost:9093 |
 | CloudWatch | AWS Console | `/aws/eks/to-do/containers` log group |
 
 See [Monitoring Guide](docs/monitoring-guide.md) for dashboards, alerts, and queries.
@@ -196,7 +194,7 @@ See [Monitoring Guide](docs/monitoring-guide.md) for dashboards, alerts, and que
 | 2 | CD Pipeline + Deployment Validation Script | ✅ Done |
 | 3 | Prometheus monitoring + ServiceMonitor | ✅ Done |
 | 4 | Grafana dashboards (To-Do App dashboard) | ✅ Done |
-| 5 | Alerting (AlertManager + 4 PrometheusRules) | ✅ Done |
+| 5 | Alerting (4 Prometheus alert rules) | ✅ Done |
 | 6 | Multi-environment (Terraform workspaces + per-env tfvars) | ✅ Done |
 | 7 | Secrets management (AWS Secrets Manager + IRSA) | ✅ Done |
 | 8 | Security scanning (Trivy in CI pipeline) | ✅ Done |
