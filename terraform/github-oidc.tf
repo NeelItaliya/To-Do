@@ -5,24 +5,17 @@
 #   1. describe this EKS cluster (needed to build a kubeconfig)
 #   2. edit workloads in the app namespace (granted through an EKS access entry)
 #
-# Everything here is destroyed with the rest of the stack, so while the
-# infrastructure is down the pipeline has no way in and skips the deploy.
+# The role and the access entry are destroyed with the rest of the stack, so
+# while the infrastructure is down the pipeline has no way in and skips the deploy.
 
-resource "aws_iam_openid_connect_provider" "github" {
-  url            = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
-
-  # AWS validates GitHub's certificate chain itself; these are GitHub's
-  # published thumbprints, kept because the argument is still required.
-  thumbprint_list = [
-    "6938fd4d98bab03faadb97b34396831e3780aea1",
-    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
-  ]
-
-  tags = {
-    Name    = "${var.project_name}-github-oidc"
-    Project = var.project_name
-  }
+# An AWS account can hold only one OIDC provider per issuer URL, and this
+# account already has GitHub's. It is looked up, not created, so
+# `terraform destroy` leaves it alone. In a new account, create it once:
+#   aws iam create-open-id-connect-provider \
+#     --url https://token.actions.githubusercontent.com \
+#     --client-id-list sts.amazonaws.com
+data "aws_iam_openid_connect_provider" "github" {
+  url = "https://token.actions.githubusercontent.com"
 }
 
 resource "aws_iam_role" "github_deploy" {
@@ -34,7 +27,7 @@ resource "aws_iam_role" "github_deploy" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = aws_iam_openid_connect_provider.github.arn
+        Federated = data.aws_iam_openid_connect_provider.github.arn
       }
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {

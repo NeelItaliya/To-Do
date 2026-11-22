@@ -90,7 +90,7 @@ This provisions:
 - App namespace, ConfigMap, Secret, ServiceAccount, Deployment, Service, Ingress
 - JWT secret in AWS Secrets Manager
 - CloudWatch Log Group `/aws/eks/to-do/containers`
-- GitHub OIDC provider and the `to-do-github-deploy` role used by the CD pipeline
+- The `to-do-github-deploy` role used by the CD pipeline (it trusts the account's existing GitHub OIDC provider)
 - App monitoring: ServiceMonitor, the "To-Do App" Grafana dashboard, alert rules
 
 ### Step 6 — Configure kubectl
