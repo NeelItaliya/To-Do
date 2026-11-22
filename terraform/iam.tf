@@ -133,6 +133,57 @@ resource "aws_iam_role_policy_attachment" "lbc" {
   policy_arn = aws_iam_policy.lbc.arn
 }
 
+# ─── IRSA — Fluent Bit ServiceAccount for CloudWatch Logs ───────────────────
+
+resource "aws_iam_role" "fluent_bit_irsa" {
+  name = "${var.project_name}-fluent-bit-irsa"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Federated = aws_iam_openid_connect_provider.eks.arn
+      }
+      Action = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "${local.oidc_issuer}:sub" = "system:serviceaccount:logging:fluent-bit"
+          "${local.oidc_issuer}:aud" = "sts.amazonaws.com"
+        }
+      }
+    }]
+  })
+
+  tags = {
+    Name    = "${var.project_name}-fluent-bit-irsa"
+    Project = var.project_name
+  }
+}
+
+resource "aws_iam_role_policy" "fluent_bit_cloudwatch" {
+  name = "${var.project_name}-fluent-bit-cloudwatch-policy"
+  role = aws_iam_role.fluent_bit_irsa.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogStream",
+        "logs:CreateLogGroup",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams",
+        "logs:DescribeLogGroups"
+      ]
+      Resource = [
+        aws_cloudwatch_log_group.eks.arn,
+        "${aws_cloudwatch_log_group.eks.arn}:*"
+      ]
+    }]
+  })
+}
+
 # ─── App ServiceAccount DynamoDB policy ─────────────────────────────────────
 
 resource "aws_iam_role_policy" "app_dynamodb" {

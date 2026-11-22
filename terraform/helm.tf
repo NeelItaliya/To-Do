@@ -142,6 +142,21 @@ resource "helm_release" "fluent_bit" {
   create_namespace = true
   version          = "0.47.9"
 
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "fluent-bit"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.fluent_bit_irsa.arn
+  }
+
   values = [<<-EOT
     config:
       filters: |
@@ -166,6 +181,10 @@ resource "helm_release" "fluent_bit" {
   EOT
   ]
 
-  depends_on = [aws_eks_node_group.main, aws_cloudwatch_log_group.eks]
+  depends_on = [
+    aws_eks_node_group.main,
+    aws_cloudwatch_log_group.eks,
+    aws_iam_role_policy.fluent_bit_cloudwatch,
+  ]
 }
 
