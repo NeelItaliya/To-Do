@@ -10,4 +10,6 @@ CLAUDE.md
 *.tfstate
 *.tfstate.backup
 *.tfvars
+# Per-environment sizing files contain no secrets and are part of the project.
+!terraform/envs/*.tfvars
 terraform/*.backup
