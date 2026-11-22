@@ -47,7 +47,7 @@ spec:
             description: "Pod {{ $labels.pod }} in namespace to-do has been not ready for 2 minutes"
 
         - alert: TodoAppDown
-          expr: absent(up{job="to-do-monitor"}) or sum(up{job="to-do-monitor"}) == 0
+          expr: absent(up{job="to-do-svc"}) or sum(up{job="to-do-svc"}) == 0
           for: 1m
           labels:
             severity: critical

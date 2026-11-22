@@ -203,8 +203,8 @@ resource "aws_iam_role_policy" "app_dynamodb" {
           "dynamodb:UpdateItem"
         ]
         Resource = [
-          aws_dynamodb_table.users.arn,
-          aws_dynamodb_table.todos.arn
+          data.aws_dynamodb_table.users.arn,
+          data.aws_dynamodb_table.todos.arn
         ]
       },
       {

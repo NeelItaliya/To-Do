@@ -28,14 +28,17 @@ Developer Push
       ▼
 GitHub Actions CI
   ├── Lint & Test (ESLint + Jest + coverage)
-  ├── Build & Push Docker Image (linux/amd64 → Docker Hub)
-  └── Security Scan (Trivy — CRITICAL/HIGH vulnerabilities)
+  ├── Build Docker Image (linux/amd64)
+  ├── Security Scan (Trivy — a fixable CRITICAL stops the pipeline)
+  └── Push to Docker Hub (tags: commit SHA, branch, latest on main)
       │
-      ▼ (on merge to main)
+      ▼ (after CI passes on main)
 GitHub Actions CD
-  ├── Configure AWS credentials
-  ├── kubectl set image (rolling update)
-  └── Validate deployment (replica health + ALB health check)
+  ├── Sign in to AWS with a short-lived OIDC role (no stored keys)
+  ├── Skip cleanly if the cluster is not running
+  ├── kubectl set image → the commit-SHA tag (rolling update)
+  ├── Validate deployment (replicas, image, ALB health check)
+  └── Roll back automatically if validation fails
 ```
 
 ```

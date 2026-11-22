@@ -18,13 +18,13 @@ resource "kubernetes_config_map" "app" {
   }
 
   data = {
-    NODE_ENV         = "production"
-    PORT             = tostring(var.app_port)
-    AWS_REGION       = var.aws_region
-    USERS_TABLE      = var.users_table_name
-    TODOS_TABLE      = var.todos_table_name
-    ENVIRONMENT      = var.environment
-    JWT_SECRET_NAME  = aws_secretsmanager_secret.jwt_secret.name
+    NODE_ENV        = "production"
+    PORT            = tostring(var.app_port)
+    AWS_REGION      = var.aws_region
+    USERS_TABLE     = var.users_table_name
+    TODOS_TABLE     = var.todos_table_name
+    ENVIRONMENT     = var.environment
+    JWT_SECRET_NAME = aws_secretsmanager_secret.jwt_secret.name
   }
 }
 
@@ -125,6 +125,16 @@ resource "kubernetes_deployment" "app" {
         }
       }
     }
+  }
+
+  # Terraform creates the Deployment with var.app_image. After that the CD
+  # pipeline owns the image (it deploys a commit-SHA tag on every push to main),
+  # so a later `terraform apply` must not reset it.
+  lifecycle {
+    ignore_changes = [
+      spec[0].template[0].spec[0].container[0].image,
+      metadata[0].annotations["kubernetes.io/change-cause"],
+    ]
   }
 }
 

@@ -75,3 +75,15 @@ variable "slack_webhook_url" {
   default     = ""
   sensitive   = true
 }
+
+variable "github_repository" {
+  description = "GitHub repository (owner/name) whose Actions workflows may deploy to the cluster"
+  type        = string
+  default     = "NeelItaliya/To-Do"
+}
+
+variable "github_deploy_branch" {
+  description = "Branch whose CD runs are allowed to assume the deploy role"
+  type        = string
+  default     = "main"
+}
