@@ -149,6 +149,23 @@ describe('To-Do API (integration)', () => {
     expect(get.status).toBe(404);
   });
 
+  test('GET / serves the landing page', async () => {
+    const res = await request(app).get('/');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/html/);
+    expect(res.text).toContain('Every task gets a deadline');
+  });
+
+  test.each([
+    ['/login', 'auth-form'],
+    ['/app', 'composer'],
+  ])('GET %s serves its page without the .html extension', async (route, marker) => {
+    const res = await request(app).get(route);
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/html/);
+    expect(res.text).toContain(`id="${marker}"`);
+  });
+
   test('unknown route returns 404 json', async () => {
     const res = await request(app).get('/nope');
     expect(res.status).toBe(404);

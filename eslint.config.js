@@ -23,6 +23,27 @@ module.exports = [
     },
   },
   {
+    // Browser scripts served from public/ (plain scripts, no bundler).
+    files: ['public/js/**/*.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        localStorage: 'readonly',
+        fetch: 'readonly',
+        URLSearchParams: 'readonly',
+        setInterval: 'readonly',
+        clearTimeout: 'readonly',
+        requestAnimationFrame: 'readonly',
+      },
+    },
+    rules: {
+      'no-var': 'error',
+      'prefer-const': 'error',
+    },
+  },
+  {
     files: ['tests/**/*.js'],
     languageOptions: {
       globals: {

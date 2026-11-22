@@ -1,0 +1,758 @@
+/* To-Do — shared tokens and components.
+   Glass surfaces sit on a backdrop of three colour fields whose hues follow
+   the viewer's local time of day (set in /js/theme.js). */
+
+:root {
+  color-scheme: light;
+
+  /* Backdrop hues, overridden by theme.js. Defaults are the midday sets.
+     --h* is the light-theme set and --d* the dark-theme set (cool hues only;
+     the dark theme shows them as a faint tint on graphite). */
+  --h1: 245;
+  --h2: 200;
+  --h3: 75;
+  --d1: 255;
+  --d2: 210;
+  --d3: 295;
+  --f1: var(--h1);
+  --f2: var(--h2);
+  --f3: var(--h3);
+  --field-reach: 62%;
+
+  --base: #edf0f6;
+  --field-l: 87%;
+  --field-c: 0.1;
+
+  --ink: #1d1d1f;
+  --ink-2: #474952;
+  --ink-3: #666873;
+
+  --glass: rgb(255 255 255 / 0.54);
+  --glass-solid: rgb(255 255 255 / 0.8);
+  --rim-hi: rgb(255 255 255 / 0.95);
+  --rim-lo: rgb(255 255 255 / 0.3);
+  --glass-shadow:
+    0 1px 1px rgb(20 30 60 / 0.04),
+    0 10px 30px -12px rgb(20 30 60 / 0.2),
+    0 36px 70px -36px rgb(20 30 60 / 0.25);
+  --shadow-sm: 0 1px 2px rgb(20 30 60 / 0.08), 0 4px 12px -4px rgb(20 30 60 / 0.12);
+
+  --fill: rgb(118 118 128 / 0.12);
+  --fill-2: rgb(118 118 128 / 0.2);
+  --fill-hover: rgb(118 118 128 / 0.08);
+  --thumb: #fff;
+  --hairline: rgb(60 60 67 / 0.13);
+
+  --accent: #0071e3;
+  --accent-hover: #0064c9;
+  --accent-text: #0062c4;
+  --accent-ring: rgb(0 113 227 / 0.28);
+
+  --red: #c4000f;
+  --orange: #a35200;
+  --green: #1c7a35;
+
+  --r-panel: 28px;
+  --r-inner: 18px;
+  --r-control: 14px;
+
+  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont, "SF Pro Display",
+    "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Neutral graphite. The colour fields are kept faint (low chroma), so the
+     backdrop reads as dark grey with a hint of tint, not as a colour wash. */
+  --f1: var(--d1);
+  --f2: var(--d2);
+  --f3: var(--d3);
+  --field-reach: 70%;
+
+  --base: #0a0a0c;
+  --field-l: 27%;
+  --field-c: 0.035;
+
+  --ink: #f5f5f7;
+  --ink-2: #c7c7cc;
+  --ink-3: #a1a1a8;
+
+  /* Lighter than the backdrop, so panels lift off it instead of sinking in. */
+  --glass: rgb(50 50 56 / 0.58);
+  --glass-solid: rgb(38 38 43 / 0.9);
+  --rim-hi: rgb(255 255 255 / 0.34);
+  --rim-lo: rgb(255 255 255 / 0.08);
+  --glass-shadow:
+    0 1px 1px rgb(0 0 0 / 0.3),
+    0 18px 44px -16px rgb(0 0 0 / 0.7),
+    0 40px 80px -40px rgb(0 0 0 / 0.8);
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 12px -4px rgb(0 0 0 / 0.5);
+
+  --fill: rgb(120 120 128 / 0.24);
+  --fill-2: rgb(120 120 128 / 0.36);
+  --fill-hover: rgb(120 120 128 / 0.14);
+  --thumb: rgb(255 255 255 / 0.17);
+  --hairline: rgb(255 255 255 / 0.1);
+
+  --accent-text: #4da3ff;
+  --accent-ring: rgb(77 163 255 / 0.45);
+
+  --red: #ff7066;
+  --orange: #ffb340;
+  --green: #4cd787;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--base);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: var(--font-text);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* The backdrop. Fixed, so page content slides over it and under the glass. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(62vmax 58vmax at 8% 0%, oklch(var(--field-l) var(--field-c) var(--f1)), transparent var(--field-reach)),
+    radial-gradient(54vmax 54vmax at 100% 18%, oklch(var(--field-l) var(--field-c) var(--f2)), transparent var(--field-reach)),
+    radial-gradient(70vmax 56vmax at 58% 110%, oklch(var(--field-l) var(--field-c) var(--f3)), transparent var(--field-reach)),
+    var(--base);
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+a {
+  color: var(--accent-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  stroke-width: 1.9;
+}
+
+/* ---------- Glass ---------- */
+
+.glass {
+  position: relative;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border-radius: var(--r-panel);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Specular rim: bright where light enters (top left) and exits (bottom right). */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    var(--rim-hi) 0%,
+    var(--rim-lo) 28%,
+    transparent 52%,
+    var(--rim-lo) 78%,
+    var(--rim-hi) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+/* ---------- Brand ---------- */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  border-radius: 999px;
+}
+
+.brand .mark {
+  width: 26px;
+  height: 26px;
+  color: var(--accent-text);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.16s var(--ease-out),
+    background-color 0.16s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.32),
+    0 8px 18px -8px rgb(0 113 227 / 0.7);
+}
+
+.btn-primary:hover:not([disabled]) {
+  background: var(--accent-hover);
+}
+
+/* For controls that sit directly on the backdrop. */
+.btn-glass {
+  background: var(--glass);
+  color: var(--ink);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--rim-hi),
+    inset 0 0 0 1px var(--rim-lo),
+    var(--shadow-sm);
+}
+
+.btn-glass:hover {
+  background: var(--glass-solid);
+}
+
+/* For controls that sit inside a glass panel. */
+.btn-soft {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+.btn-soft:hover {
+  background: var(--fill-2);
+}
+
+.btn-quiet {
+  min-height: 36px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--accent-text);
+}
+
+.btn-quiet:hover {
+  background: var(--fill);
+}
+
+.btn-danger {
+  color: var(--red);
+}
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.icon-btn:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+/* Theme toggle shows the theme you would switch to. */
+.theme-toggle .icon-sun,
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+  display: block;
+}
+
+/* ---------- Fields ---------- */
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  background: var(--fill);
+  color: var(--ink);
+  font-size: 16px;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background-color 0.16s ease;
+}
+
+.input::placeholder {
+  color: var(--ink-3);
+}
+
+.input:hover {
+  background: var(--fill-2);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-ring);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--red);
+}
+
+.form-error {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--red);
+}
+
+/* Segmented control built from radio inputs. */
+.seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--fill);
+}
+
+.seg label {
+  position: relative;
+  cursor: pointer;
+}
+
+.seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.seg span {
+  display: block;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--ink-2);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.seg input:checked + span {
+  background: var(--thumb);
+  color: var(--ink);
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.14),
+    inset 0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+.seg input:focus-visible + span {
+  outline: 3px solid var(--accent-ring);
+  outline-offset: 1px;
+}
+
+/* Chips: quick choices, such as deadline presets. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+button.chip {
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease, transform 0.16s var(--ease-out);
+}
+
+button.chip:hover:not([aria-pressed="true"]) {
+  background: var(--fill-2);
+  color: var(--ink);
+}
+
+button.chip:active {
+  transform: scale(0.96);
+}
+
+/* ---------- Task rows (tasks page and the landing demo) ---------- */
+
+.tasks {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+}
+
+.task {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 12px;
+  padding: 9px 8px 9px 14px;
+  border-radius: 20px;
+  transition: background-color 0.16s ease;
+}
+
+.task + .task::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 52px;
+  right: 14px;
+  height: 1px;
+  background: var(--hairline);
+}
+
+@media (hover: hover) {
+  .task:hover {
+    background: var(--fill-hover);
+  }
+}
+
+.check {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid var(--ink-3);
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s var(--ease-out);
+}
+
+/* 44px hit area around the 26px circle. */
+.check::after {
+  content: "";
+  position: absolute;
+  inset: -11px;
+}
+
+.check .icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.6;
+  opacity: 0;
+  transform: scale(0.4);
+  transition:
+    opacity 0.18s ease,
+    transform 0.26s var(--ease-out);
+}
+
+.check:hover {
+  border-color: var(--accent);
+}
+
+.check:active {
+  transform: scale(0.88);
+}
+
+.check[aria-checked="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.check[aria-checked="true"] .icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.task-main {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+}
+
+button.task-main {
+  cursor: pointer;
+}
+
+.task-title {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  transition: color 0.2s ease;
+}
+
+.task-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.task-due .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.2;
+}
+
+.task[data-state="soon"] .task-due {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.task[data-state="missed"] .task-due {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.task[data-state="done"] .task-title {
+  color: var(--ink-3);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+/* Priority is drawn as signal bars so it never competes with the status colours. */
+.prio {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 9px;
+  border-radius: 999px;
+  background: var(--fill);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 11px;
+}
+
+.bars i {
+  width: 3px;
+  border-radius: 1.5px;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+.bars i:nth-child(1) {
+  height: 5px;
+}
+
+.bars i:nth-child(2) {
+  height: 8px;
+}
+
+.bars i:nth-child(3) {
+  height: 11px;
+}
+
+.bars[data-level="1"] i:nth-child(-n + 1),
+.bars[data-level="2"] i:nth-child(-n + 2),
+.bars[data-level="3"] i:nth-child(-n + 3) {
+  opacity: 1;
+  background: var(--accent-text);
+}
+
+.task[data-state="done"] .prio {
+  opacity: 0.6;
+}
+
+.task-delete {
+  width: 36px;
+  height: 36px;
+  color: var(--ink-3);
+}
+
+.task-delete:hover {
+  color: var(--red);
+}
+
+@media (hover: hover) {
+  .task-delete {
+    opacity: 0;
+  }
+
+  .task:hover .task-delete,
+  .task:focus-within .task-delete {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
